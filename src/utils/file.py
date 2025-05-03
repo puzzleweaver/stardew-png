@@ -1,4 +1,5 @@
 
+import copy
 import json
 import os
 import subprocess
@@ -66,7 +67,10 @@ class File:
         return ret
 
     def getImage(filename):
-        return Image.open(filename)
+        image = Image.open(filename)
+        ret = image.copy()
+        image.close()
+        return ret
 
     def saveImage(filename, image):
         print(f"saving image {filename}...")
@@ -103,8 +107,7 @@ class File:
         file = open(filename, "w")
         file.write(contents)
 
-    def displayDirectory(directory, manifest, selected):
-        filenames = File.getNames(directory)
+    def displayDirectory(filenames, manifest, selected):
         File.displayImage(
             Graphics.collect(
                 filenames,

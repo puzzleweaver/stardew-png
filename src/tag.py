@@ -1,4 +1,5 @@
 # Import module
+from math import ceil
 import sys
 from utils.file import File
 from utils.manifest import Manifest
@@ -28,18 +29,60 @@ def getManifest():
 # print(allTags)
 # exit()
 
-for directory in dirs:
+pageSize = 32
+
+pages = []
+currentPageIndex = 0
+
+def step(count):
+    global currentPageIndex
+    currentPageIndex = currentPageIndex + count
+    if currentPageIndex < 0: currentPageIndex = 0
+    if currentPageIndex >= len(pages): currentPageIndex = len(pages)-1
+
+def recalculate():
+    global pages
+    pages = []
+    for directory in dirs:
+
+        allFiles = File.getNames(directory)
+        allFiles.sort(key=lambda filename: int(File.getIndex(filename)))
+
+        subpages = ceil(len(allFiles)/pageSize)
+        for i in range(subpages):
+            pages.append(
+                allFiles[i*pageSize : (i+1)*pageSize]
+            )
+
+    # freshly clamp page index
+    step(0)
+
+recalculate()
+
+while True:
+    currentPage = pages[currentPageIndex]
+
+    def filenameByIndex(index):
+        global currentPage
+        matches = [
+            filename for filename in currentPage
+            if f"/{index}.png" in filename
+        ]
+        if len(matches) == 0: raise f"Fatal: No file at index!! {index} on {currentPage}"
+        if len(matches) > 1: raise f"Fatal: Too many files at index!! {matches}"
+        return matches[0]
+
+    def display():
+        global currentPageIndex
+        File.displayDirectory(currentPage, getManifest(), selected)
+        print(f"Currently on page {currentPageIndex+1}/{len(pages)}")
 
     # start with everything in the directory selected. much easier
-    selected = File.getNames(directory)
-    def display():
-        File.displayDirectory(directory, getManifest(), selected)
-        print(f"Showing: {directory}")
+    selected = currentPage
 
     display()
 
-    done = False
-    while not done:
+    while True:
         manifest = getManifest()
 
         command = input(" ~> ")
@@ -50,25 +93,31 @@ for directory in dirs:
             args = words[1:]
 
             if "*" in args:
-                selected = File.getNames(directory)
+                selected = currentPage
             else:
                 selected.extend([
-                    f"{directory}/{arg}.png" for arg in args
+                    file for file in [
+                        filenameByIndex(arg) for arg in args
+                    ]
+                    if file in currentPage
                 ])
 
             display()
         elif choice == "rm":
-            args = [
-                f"{directory}/{word}.png" for word in words[1:]
-            ]
+            args = words[1:]
 
+            anyDeleted = False
             for arg in args:
-                confirmation = input(f"Delete {arg}? (Y to confirm)")
+                filename = filenameByIndex(arg)
+                File.displayImageFile(filename)
+                confirmation = input(f"Delete {filename}? (Y to confirm)")
                 if(confirmation == "Y"):
-                    File.deleteFile(arg)
-                    display()
+                    File.deleteFile(filename)
+                    anyDeleted = True
                 else:
-                    print(f"Skipping {arg}.")
+                    print(f"Skipping {filename}.")
+            if anyDeleted:
+                break
         elif choice == "d":
             args = words[1:]
 
@@ -76,7 +125,7 @@ for directory in dirs:
                 selected = []
             else:
                 excludedFilenames = [
-                    f"{directory}/{arg}.png" for arg in args
+                    filenameByIndex(arg) for arg in args
                 ]
                 selected = [
                     filename for filename in selected
@@ -93,11 +142,40 @@ for directory in dirs:
             newManifest = manifest.withTagsAdded(selected, newTags)
             File.writeText("output/manifest.json", newManifest.toJson())
             display()
-        elif choice == "done":
-            # TODO save all the new tags.
-            done = True
-        elif choice == "skip":
-            done = True
+        elif choice == "ut":
+            if len(selected) == 0:
+                print("Nothing selected.")
+                continue
+
+            newTags = words[1:]
+            newManifest = manifest.withTagsRemoved(selected, newTags)
+            File.writeText("output/manifest.json", newManifest.toJson())
+            display()
+        elif choice == "c":
+            count = 1
+            if len(words) == 2:
+                try:
+                    count = int(words[1])
+                except:
+                    print("Count must be an integer.")
+                    continue
+            # TODO navigate to a different page.
+            step(count)
+            break
+        elif choice == "p":
+            count = 1
+            if len(words) == 2:
+                try:
+                    count = int(words[1])
+                except:
+                    print("Count must be an integer.")
+                    continue
+            # TODO navigate to a different page.
+            step(-count)
+            break
+        elif choice == "exit":
+            print("Bye Bye ^_^")
+            exit()
         else:
             print(
                 "\n".join([
@@ -107,13 +185,17 @@ for directory in dirs:
                     "|               |",
                     "| d $index ...  | deselect one or more images, * for all",
                     "|               |",
-                    "| t $tag ...    | adds tags to all selected",
+                    "| t $tag ...    | adds specified tags to all selected",
                     "|               |",
-                    # "| ut $tag ...   | removes tags from all selected"
-                    # "|               |",
+                    "| ut $tag ...   | removes specified tags from all selected",
+                    "|               |",
                     "| rm $index ... | deletes specified files",
                     "|               |",
-                    "| done          | moves to next set of images",
+                    "| c $count?     | navigates/continues forward 1 or more pages",
+                    "|               |",
+                    "| p $count?     | navigates/continues backwards 1 or more pages",
+                    "|               |",
+                    "| e             | exit program.",
                     "+---------------+",
                 ])
             )

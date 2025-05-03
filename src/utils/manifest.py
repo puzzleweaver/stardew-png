@@ -38,6 +38,16 @@ class Manifest:
                     newTags.append(addedTag)
             newData[filename] = newTags
         return Manifest(newData)
+    
+    def withTagsRemoved(self, filenames, removedTags):
+        newData = copy.deepcopy(self.data)
+        for filename in filenames:
+            newTags = [
+                tag for tag in self.getFileTags(filename)
+                if not tag in removedTags
+            ]
+            newData[filename] = newTags
+        return Manifest(newData)
 
     def getAllTags(self):
         filenames = list(self.data.keys())

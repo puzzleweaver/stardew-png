@@ -32,7 +32,6 @@ print(f"{len(filenames)} Files")
 
 for filename in filenames:
     # img = Image.open(allFiles[0])
-    image = File.getImage(filename)
     sheet = Sheet.initial(filename)
 
     sampleOutput = sheet.getSubpath(0)
@@ -41,7 +40,8 @@ for filename in filenames:
         continue
 
     def display():
-        sheet.drawOn(image)
+        with File.getImage(filename) as image:
+            sheet.drawOn(image)
         print(f"current state for {sheet.filename}")
 
     display()
@@ -100,7 +100,7 @@ for filename in filenames:
             display()
         elif choice == 'z':
             if len(words) == 1:
-                sheet.drawOn(image)
+                display()
                 print("reset zoom.")
                 continue
 
