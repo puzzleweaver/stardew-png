@@ -22,12 +22,12 @@ class Manifest:
     
     def getFileTagString(self, filename):
         tags = self.getFileTags(filename)
-        return "\n".join(wrap(
-            " ".join([
-                tag.replace(" ", "_") for tag in tags
-            ]),
-            13
-        )).replace("\n", ",\n").replace(" ", ",").replace("_", " ")
+        return "\n".join(
+            wrap(
+                " ".join(tags),
+                13,
+            )
+        ).replace(" ", ",")
     
     def withTagsAdded(self, filenames, addedTags):
         newData = copy.deepcopy(self.data)

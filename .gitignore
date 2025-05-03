@@ -1,2 +1,5 @@
 temp
 venv
+*.pyc
+.DS_Store
+
