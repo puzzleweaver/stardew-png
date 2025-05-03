@@ -102,13 +102,18 @@ for directory in dirs:
             print(
                 "\n".join([
                     "Enter one of the following commands:",
-                    "+--------+---------------",
-                    "| Select | s $index ...  ",
-                    "| Desel. | d $index ...  ",
-                    "| Tag    | t $tag ...    ",
-                    "| Remove | rm $index ... ",
-                    "| Done   | done          ",
-                    "| Skip   | skip          ",
-                    "+--------+---------------",
+                    "+---------------+",
+                    "| s $index ...  | select one or more images, * for all",
+                    "|               |",
+                    "| d $index ...  | deselect one or more images, * for all",
+                    "|               |",
+                    "| t $tag ...    | adds tags to all selected",
+                    "|               |",
+                    # "| ut $tag ...   | removes tags from all selected"
+                    # "|               |",
+                    "| rm $index ... | deletes specified files",
+                    "|               |",
+                    "| done          | moves to next set of images",
+                    "+---------------+",
                 ])
             )

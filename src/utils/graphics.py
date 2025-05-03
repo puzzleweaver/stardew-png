@@ -10,8 +10,19 @@ class Graphics:
         shape = [(left, top), (left+width, top+height)]
         ret.rectangle(shape, fill=fill, outline=stroke, width=lineWidth)
     
-    def drawText(image, x, y, text, size):
+    def drawText(image, x, y, width, height, text):
         draw = ImageDraw.Draw(image)
+
+        maxLineLen = 0
+        lines = text.split("\n")
+        for line in lines:
+            maxLineLen = max(maxLineLen, len(line))
+        widthFactor = 0.66666
+        heightFactor = 1.5
+        size = min(
+            width / (maxLineLen * widthFactor),
+            height / (len(lines) * heightFactor)
+        )
 
         font = ImageFont.truetype(r'./src/fonts/roboto_mono_bold.ttf', size)  
         textWidth = 0
@@ -61,16 +72,14 @@ class Graphics:
             canvas.paste(thumbnail, (tup[0], tup[1]))
 
             suffix = filename.split("/")[-1]
-            lines = [ suffix, "-"*13 ] + tagString.split("\n")
-            maxLineLen = 0
-            for line in lines:
-                maxLineLen = max(maxLineLen, len(line))
+            lines = [ f"{suffix}:" ] + tagString.split("\n")
             Graphics.drawText(
                 canvas, 
                 tup[0] + imgWidth/2, 
-                tup[1] + imgWidth/2, 
-                "\n".join(lines), 
-                1.5*imgWidth/maxLineLen,
+                tup[1] + imgWidth, 
+                imgWidth,
+                imgWidth,
+                "\n".join(lines),
             )
 
             # draw border
