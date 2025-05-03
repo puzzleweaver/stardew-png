@@ -3,7 +3,7 @@ import sys
 from utils.file import File
 from utils.manifest import Manifest
 
-File.setPercentage("70%")
+File.setImageHeight(40)
 
 if len(sys.argv) != 2:
     print(

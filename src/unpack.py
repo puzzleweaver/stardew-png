@@ -4,7 +4,7 @@ from utils.sprite import Sheet
 from utils.file import File
 import sys
 
-File.setPercentage("50%")
+File.setImageHeight(30)
 
 if len(sys.argv) != 2:
     print(

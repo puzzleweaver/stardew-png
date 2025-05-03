@@ -9,10 +9,10 @@ from utils.graphics import Graphics
 
 class File:
     """Handles all file IO operations."""
-    percentage = "65%"
+    height = 15
 
-    def setPercentage(newPercentage):
-        File.percentage = newPercentage
+    def setImageHeight(newHeight):
+        File.height = newHeight
 
     def hasExtension(filename, extension):
         """Checks whether a filename has a specified extension."""
@@ -80,7 +80,8 @@ class File:
 
     def displayImageFile(filename):
         """Displays an image by filename. """
-        subprocess.Popen(f'clear; imgcat -s -H {File.percentage} "{filename}"', shell=True).wait()
+        subprocess.Popen('clear', shell=True).wait()
+        subprocess.Popen(f'imgcat --height {File.height} "{filename}"', shell=True).wait()
 
     def displayImage(image):
         """Displays an image by saving it as a temporary file and then using displayImageFile."""
