@@ -59,6 +59,7 @@ def setFilename(index):
     if File.exists(sampleOutput):
         print(f"Skipping {filename}...")
         next()
+        return
     display("Initial")
 
 def next():
@@ -78,7 +79,7 @@ doneCommand = Command(
 
 def skip(args):
     next()
-skipCommand = Command("skip", "Skip", "Skip to the next sheet.", [], skip)
+skipCommand = Command("s", "Skip", "Skip to the next sheet.", [], skip)
 
 def reset(args):
     global filename
