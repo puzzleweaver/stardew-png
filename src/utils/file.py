@@ -7,6 +7,7 @@ import subprocess
 from PIL import Image
 
 from utils.graphics import Graphics
+from utils.program import Program
 
 class File:
     """Handles all file IO operations."""
@@ -84,7 +85,7 @@ class File:
 
     def displayImageFile(filename):
         """Displays an image by filename. """
-        subprocess.Popen('clear', shell=True).wait()
+        Program.clear()
         subprocess.Popen(f'imgcat --height {File.height} "{filename}"', shell=True).wait()
 
     def displayImage(image):
@@ -107,7 +108,7 @@ class File:
         file = open(filename, "w")
         file.write(contents)
 
-    def displayDirectory(filenames, manifest, selected):
+    def displayList(filenames, manifest, selected=[], caption=None):
         File.displayImage(
             Graphics.collect(
                 filenames,
@@ -116,3 +117,5 @@ class File:
                 selected,
             )
         )
+        if caption != None:
+            print(caption)
