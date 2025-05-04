@@ -1,3 +1,4 @@
+from math import ceil, sqrt
 from utils.graphics import Graphics
 from utils.file import File
 from PIL import Image
@@ -33,6 +34,19 @@ class Subsprite:
             self.getRight(),
             self.getBottom(),
         )
+    
+    def divisorsOf(n):
+        ret = []
+        for i in range(2, ceil(n/8)):
+            if n % i == 0:
+                ret.append(i)
+        return ret
+
+    def getDivisors(self):
+        return (
+            Subsprite.divisorsOf(self.width),
+            Subsprite.divisorsOf(self.height),
+        );
     
     def intersects(self, other):
         (l, t) = self.getLeftTop()
@@ -117,7 +131,7 @@ class Sheet:
             filename,
             [Subsprite(0, 0, imgWidth, imgHeight)]
         )
-    
+
     def merge(self, topleftIndex, bottomrightIndex):
         (left, top) = self.subsprites[topleftIndex].getLeftTop()
         (right, bottom) = self.subsprites[bottomrightIndex].getRightBottom()
