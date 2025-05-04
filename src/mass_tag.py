@@ -54,7 +54,7 @@ rmtagCommand = Command(
 
 # Clean Manifest
 def clean(args):
-    newManifest, removed = manifest.clean()
+    newManifest, removed = getManifest().clean()
     File.writeText("output/manifest.json", newManifest.toJson())
     print(f"Removed tags from manifest: {' '.join(removed)}")
 cleanCommand = Command(
@@ -66,7 +66,7 @@ cleanCommand = Command(
 
 # List Tags
 def tags(args):
-    global manifest
+    manifest = getManifest()
     allTags = manifest.getAllTags()
     allTags.sort()
 
