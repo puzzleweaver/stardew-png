@@ -46,6 +46,7 @@ class Graphics:
                 for j in range(image.height):
                     stroke = "#bbbbbb"
                     if i%5 == 0 and j%5 == 0: stroke = "black"
+                    if i%10 == 0 and j%10 == 0: stroke = "red"
                     Graphics.drawRect(ret, i*factor, j*factor, 1, 1, stroke=stroke)
         return ret
     

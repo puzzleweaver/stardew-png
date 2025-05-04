@@ -1,5 +1,7 @@
 # Import module
+from termcolor import colored
 from utils.graphics import Graphics
+from utils.program import Arg, Command, Program
 from utils.sprite import Sheet
 from utils.file import File
 import sys
@@ -25,119 +27,196 @@ filenames = File.getNames(rootDirectory)
 # Graphics.displayAll(dirs[0])
 # exit()
 
-from utils.input import Input
 # print("\n".join(allFiles))
 
 print(f"{len(filenames)} Files")
 
-for filename in filenames:
+def setSheet(newSheet):
+    global sheet, previousSheet
+    previousSheet = sheet
+    sheet = newSheet
+
+def display(caption):
+    with File.getImage(filename) as image:
+        sheet.drawOn(image)
+    print(caption)
+    print(f"current state for {sheet.filename}")
+
+fileIndex = 0
+
+def setFilename(index):
+    global sheet, previousSheet, filename, filenames, fileIndex
+    if index == len(filenames):
+        Program.printSpecial("Done! Byyyeee")
+        exit()
+
+    fileIndex = index
+    filename = filenames[index]
     # img = Image.open(allFiles[0])
     sheet = Sheet.initial(filename)
-
+    previousSheet = None
     sampleOutput = sheet.getSubpath(0)
     if File.exists(sampleOutput):
         print(f"Skipping {filename}...")
-        continue
+        next()
+    display("Initial")
 
-    def display():
-        with File.getImage(filename) as image:
-            sheet.drawOn(image)
-        print(f"current state for {sheet.filename}")
+def next():
+    setFilename(fileIndex+1)
 
-    display()
+def done(args):
+    global sheet
+    sheet.save()
+    next()
+doneCommand = Command(
+    "done",
+    "Done",
+    "Save current sheet configuration",
+    [],
+    done,
+)
 
-    done = False
-    while not done:
-        command = input(" ~> ")
-        words = command.split(" ")
+def skip(args):
+    next()
+skipCommand = Command("skip", "Skip", "Skip to the next sheet.", [], skip)
 
-        choice = words[0]
+def reset(args):
+    global filename
+    setSheet(
+        Sheet.initial(filename)
+    )
+    display("Reset.")
+resetCommand = Command(
+    "r",
+    "Reset Sheet",
+    "Reset the current work on this sheet.",
+    [],
+    reset,
+)
 
-        if choice == 'r':
-            sheet = Sheet.initial(filename)
-            display()
-            print("Reset.")
-        elif choice == "m":
-            if len(words) != 3:
-                print("Merge must have two arguments.")
-                continue
+def merge(args):
+    index1 = args["index1"]
+    index2 = args["index2"]
 
-            i1 = int(words[1]) if words[1].isdecimal() else None
-            i2 = int(words[2]) if words[2].isdecimal() else None
-            
-            if i1 == None or i2 == None:
-                print("Merge's arguments must be integers.")
-                continue
+    setSheet(
+        sheet.merge(index1, index2)
+    )
+    display(f"Merged {index1} and {index2}.")
+mergeCommand = Command(
+    "m",
+    "Merge Boxes",
+    "Merge two boxes by index. Replaces everything underneath with their bounding box.",
+    [ Arg.intType("index1"), Arg.intType("index2")],
+    merge
+)
 
-            sheet = sheet.merge(i1, i2)
-            display()
-        elif choice == "d":
-            if len(words) != 4:
-                print("Divide requires 3 arguments.")
-                continue
+def divide(args):
+    index = args["index"]
+    numX = args["numX"]
+    numY = args["numY"]
 
-            i = int(words[1]) if words[1].isdecimal() else None
-            w = int(words[2]) if words[2].isdecimal() else None
-            h = int(words[3]) if words[3].isdecimal() else None
-            if i == None or w == None or h == None:
-                print("All arguments must be integers.")
-                continue
+    setSheet(
+        sheet.slice(index, numX, numY)
+    )
+    display(f"Sliced {index} into {numX}x{numY} sprites")
+divideCommand = Command(
+    "d",
+    "Divide",
+    "Divide a box into numX x numY subsprites. Works best if sizes are divisible.",
+    [ Arg.intType("index"), Arg.intType("numX"), Arg.intType("numY") ],
+    divide,
+)
 
-            sheet = sheet.slice(i, w, h)
-            display()
-        elif choice == 'c':
-            if len(words) != 4:
-                print("Cut requires 3 arguments.")
-                continue
+def divisorsOf(args):
+    index = args["index"]
 
-            index = int(words[1]) if words[1].isdecimal() else None
-            axis = words[2]
-            pixels = int(words[3]) if words[3].isdecimal() else None
-            if index == None or pixels == None or not (axis == 'x' or axis == 'y'):
-                print("Invalid arguments.")
+    sprite = sheet.subsprites[index]
+    width = sprite.width
+    height = sprite.height
+    xDivisors, yDivisors = sprite.getDivisors()
+    xDivisorStrings = [f"{div}" for div in xDivisors]
+    yDivisorStrings = [f"{div}" for div in yDivisors]
+    print(
+        "\n".join([
+            f"Width  {str(width).rjust(4)} | {colored(" ".join(xDivisorStrings), "blue")}",
+            f"Height {str(height).rjust(4)} | {colored(" ".join(yDivisorStrings), "blue")}",
+        ])
+    )
+divisorsCommand = Command(
+    "divs",
+    "List Divisors",
+    "Lists the divisors of a box's size.",
+    [ Arg.intType("index") ],
+    divisorsOf,
+)
 
-            sheet = sheet.cut(index, axis, pixels)
-            display()
-        elif choice == 'z':
-            if len(words) == 1:
-                display()
-                print("reset zoom.")
-                continue
+def cut(args):
+    index = args["index"]
+    axis = args["axis"]
+    pixels = args["pixels"]
 
-            if len(words) != 2:
-                print("Zoom requires 0 or 1 arguments.")
-                continue
+    if axis not in ['x', 'y']:
+        raise ValueError("Axis must be either 'x' or 'y'.")
 
-            i = int(words[1]) if words[1].isdecimal() else None
-            if i == None:
-                print("index must be an integer.")
-                continue
-    
-            subimage = sheet.getSubimage(i)
-            File.displayImage(Graphics.scale(subimage, 8))
-            print(f"Zooming cell #{i}")
-        elif choice == 'done':
-            sheet.save()
-            done = True
-        elif choice == 's':
-            done = True
-        elif choice == 'undo':
-            print("Not yet implemented...")
-        else:
-            # print help text for babies...
-            print(
-                "\n".join([
-                    "Enter one of the following commands:",
-                    "+--------+-------------",
-                    "| Divide | d $index $width $height",
-                    "| Cut    | c $index $direction='x'|'y' $pixels",
-                    "| Merge  | m $index1 $index2",
-                    "| Zoom   | z $index | z",
-                    "| Done   | done", # saves the current division.
-                    "| Skip   | s ",
-                    "| Reset  | r ",
-                    "+--------+-------------",
-                ])
-            )
+    setSheet(
+        sheet.cut(index, axis, pixels)
+    )
+    display(f"Cut {index} with {axis}={pixels}")
+cutCommand = Command(
+    "c",
+    "Cut",
+    "Cut a sprite at a relative x or y coordinate.",
+    [ Arg.intType("index"), Arg.stringType("axis"), Arg.intType("pixels") ],
+    cut,
+)
 
+def undo(args):
+    setSheet(previousSheet)
+    display(f"Undid previous operation.")
+undoCommand = Command(
+    "u",
+    "Undo",
+    "Undo the previous action. Only one action is stored.",
+    [],
+    undo,
+)
+
+def zoom(args):
+    index = args["index"]
+    if index == None:
+        display("Reset zoom.")
+        return
+
+    subimage = sheet.getSubimage(index)
+    File.displayImage(Graphics.scale(subimage, 8))
+    print(f"Zooming cell #{index}")
+zoomCommand = Command(
+    "z",
+    "Zoom",
+    "Zoom onto a specific subsprite, or reset if no index is passed",
+    [ Arg.intType("index").optional() ],
+    zoom,
+)
+
+def init():
+    setFilename(0)
+    Program.printSuccess("Initialized :)")
+
+Program(
+    "Unpacker",
+    init,
+    [ 
+        mergeCommand,
+        divideCommand,
+        cutCommand,
+
+        divisorsCommand,
+        zoomCommand,
         
+        undoCommand,
+        
+        resetCommand,
+        skipCommand,
+        doneCommand,
+    ],
+).run()
