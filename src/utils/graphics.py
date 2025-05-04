@@ -10,7 +10,7 @@ class Graphics:
         shape = [(left, top), (left+width, top+height)]
         ret.rectangle(shape, fill=fill, outline=stroke, width=lineWidth)
     
-    def drawText(image, x, y, width, height, text):
+    def drawText(image, x, y, width, height, text, fill="black"):
         draw = ImageDraw.Draw(image)
 
         maxLineLen = 0
@@ -49,9 +49,19 @@ class Graphics:
                     Graphics.drawRect(ret, i*factor, j*factor, 1, 1, stroke=stroke)
         return ret
     
+    def withSize(image, size):
+        widthRatio = size[0]/image.width
+        heightRatio = size[1]/image.height
+        ratio = min(widthRatio, heightRatio)
+        ret = image.resize(
+            (int(ratio*image.width), int(ratio*image.height)),
+            Image.NEAREST,
+        )
+        return ret
+    
     def collect(filenames, images, manifest, selected):
         imgWidth = 200
-        rowLength = 10
+        rowLength = int((1.5 * len(filenames)) ** 0.5) + 1
         image = Image.new(
             'RGB',
             (
@@ -62,26 +72,13 @@ class Graphics:
         index = 0
         canvas = Image.new("RGBA", image.size, (0, 0, 0, 0))
         for i in range(len(images)):
-            thumbnail = Graphics.scale(images[i], 3)
             filename = filenames[i]
             tagString = manifest.getFileTagString(filename)
             tup = (
                 imgWidth * (index % rowLength),
                 2*imgWidth * int(index / rowLength),
             )
-            canvas.paste(thumbnail, (tup[0], tup[1]))
-
-            suffix = filename.split("/")[-1]
-            lines = [ f"{suffix}:" ] + tagString.split("\n")
-            Graphics.drawText(
-                canvas, 
-                tup[0] + imgWidth/2, 
-                tup[1] + imgWidth, 
-                imgWidth,
-                imgWidth,
-                "\n".join(lines),
-            )
-
+            
             # draw border
             stroke = "#bbbbbb"
             lineWidth = 1
@@ -91,12 +88,34 @@ class Graphics:
             Graphics.drawRect(
                 canvas, 
                 tup[0]+2,
-                tup[1]+2, 
-                imgWidth - 5, 
+                tup[1]+2,
+                imgWidth - 5,
                 imgWidth*2 - 5,
                 stroke=stroke,
                 lineWidth=lineWidth
             )
             
+            # draw sprite and rect of bounds
+            with Graphics.withSize(images[i], (imgWidth-11, imgWidth-11)) as thumbnail:
+                Graphics.drawRect(
+                    canvas,
+                    tup[0]+4, tup[1]+4,
+                    imgWidth-11, imgWidth-11,
+                    fill="#ffbbbb",
+                    stroke="#ffbbbb",
+                )
+                canvas.paste(thumbnail, (tup[0]+4, tup[1]+4))
+
+            suffix = filename.split("/")[-1]
+            lines = [ f"{suffix}:" ] + tagString.split("\n")
+            Graphics.drawText(
+                canvas, 
+                tup[0] + imgWidth/2,
+                tup[1] + imgWidth,
+                imgWidth,
+                imgWidth,
+                "\n".join(lines),
+            )
+
             index += 1
         return canvas

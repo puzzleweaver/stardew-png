@@ -94,8 +94,9 @@ class Subsprite:
             image,
             self.left+self.width/2,
             self.top+self.height/2,
+            self.width/3,
+            self.height/3,
             text,
-            min(self.width, self.height)/3,
         )
 
 class Sheet:
