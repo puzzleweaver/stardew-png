@@ -97,13 +97,14 @@ class Graphics:
             
             # draw sprite and rect of bounds
             with Graphics.withSize(images[i], (imgWidth-11, imgWidth-11)) as thumbnail:
-                canvas.paste(thumbnail, (tup[0]+4, tup[1]+4))
                 Graphics.drawRect(
                     canvas,
                     tup[0]+4, tup[1]+4,
                     imgWidth-11, imgWidth-11,
-                    stroke="#ff8888",
+                    fill="#ffbbbb",
+                    stroke="#ffbbbb",
                 )
+                canvas.paste(thumbnail, (tup[0]+4, tup[1]+4))
 
             suffix = filename.split("/")[-1]
             lines = [ f"{suffix}:" ] + tagString.split("\n")

@@ -37,8 +37,10 @@ currentPageIndex = 0
 def step(count):
     global currentPageIndex
     currentPageIndex = currentPageIndex + count
-    if currentPageIndex < 0: currentPageIndex = 0
-    if currentPageIndex >= len(pages): currentPageIndex = len(pages)-1
+    if currentPageIndex < 0:
+        currentPageIndex = 0
+    if currentPageIndex >= len(pages):
+        currentPageIndex = len(pages)-1
 
 def recalculate():
     global pages
@@ -75,7 +77,8 @@ while True:
     def display():
         global currentPageIndex
         File.displayDirectory(currentPage, getManifest(), selected)
-        print(f"Currently on page {currentPageIndex+1}/{len(pages)}")
+        directory = "/".join(currentPage[0].split("/")[:-1])
+        print(f"Current: {currentPageIndex+1}/{len(pages)}, {directory}")
 
     # start with everything in the directory selected. much easier
     selected = currentPage
@@ -117,6 +120,7 @@ while True:
                 else:
                     print(f"Skipping {filename}.")
             if anyDeleted:
+                recalculate()
                 break
         elif choice == "d":
             args = words[1:]
@@ -152,6 +156,10 @@ while True:
             File.writeText("output/manifest.json", newManifest.toJson())
             display()
         elif choice == "c":
+            if currentPageIndex == len(pages)-1:
+                print("Already at end.")
+                continue
+
             count = 1
             if len(words) == 2:
                 try:
@@ -163,6 +171,10 @@ while True:
             step(count)
             break
         elif choice == "p":
+            if currentPageIndex == 0:
+                print("Already at beginning.")
+                continue
+
             count = 1
             if len(words) == 2:
                 try:
