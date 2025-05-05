@@ -2,7 +2,7 @@
 from termcolor import colored
 from utils.graphics import Graphics
 from utils.program import Arg, Command, Program
-from utils.sprite import Sheet
+from utils.sprite import Box, Sheet
 from utils.file import File
 import sys
 
@@ -38,11 +38,18 @@ def setSheet(newSheet):
 
 def display(caption):
     with File.getImage(filename) as image:
-        sheet.drawOn(image)
+        sheet.drawOn(image, viewport)
     print(caption)
     print(f"current state for {sheet.filename}")
 
 fileIndex = 0
+
+def setViewport(newViewport):
+    global viewport
+    viewport = newViewport
+def resetViewport():
+    with File.getImage(filename) as image:
+        setViewport(Box(0, 0, image.width, image.height))
 
 def setFilename(index):
     global sheet, previousSheet, filename, filenames, fileIndex
@@ -52,6 +59,7 @@ def setFilename(index):
 
     fileIndex = index
     filename = filenames[index]
+    resetViewport()
     # img = Image.open(allFiles[0])
     sheet = Sheet.initial(filename)
     previousSheet = None
@@ -86,6 +94,7 @@ def reset(args):
     setSheet(
         Sheet.initial(filename)
     )
+    resetViewport()
     display("Reset.")
 resetCommand = Command(
     "r",
@@ -108,7 +117,7 @@ mergeCommand = Command(
     "Merge Boxes",
     "Merge two boxes by index. Replaces everything underneath with their bounding box.",
     [ Arg.intType("index1"), Arg.intType("index2")],
-    merge
+    merge,
 )
 
 def divide(args):
@@ -204,18 +213,22 @@ undoCommand = Command(
 )
 
 def zoom(args):
+    global viewport
     index = args["index"]
     if index == None:
+        resetViewport()
         display("Reset zoom.")
         return
-
-    subimage = sheet.getSubimage(index)
-    File.displayImage(Graphics.scale(subimage, 8))
-    print(f"Zooming cell #{index}")
+    
+    if index == None:
+        raise ValueError("Index must be specified for Zoom To.")
+    setViewport(sheet.subsprites[index])
+    display(f"Zoomed to {index}")
+    
 zoomCommand = Command(
     "z",
     "Zoom",
-    "Zoom onto a specific subsprite, or reset if no index is passed",
+    "Zoom to an index, or reset if none is specified.",
     [ Arg.intType("index").optional() ],
     zoom,
 )

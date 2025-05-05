@@ -1,9 +1,19 @@
 
+from math import ceil
 from PIL import Image, ImageDraw, ImageFont
 from textwrap import wrap
 
 class Graphics:
     """This class collects all of the image rendering used in the sprite unpacker."""
+
+    def getBackground(width, height):
+        image = Image.new('RGBA', (width, height), "#dddddd")
+        dim = 25
+        for i in range(ceil(width/dim)):
+            for j in range(ceil(height/dim)):
+                if (i+j)%2 == 0:
+                    Graphics.drawRect(image, i*dim, j*dim, dim-1, dim-1, stroke=None, fill="#eeeeee", lineWidth=0)
+        return image
 
     def drawRect(image, left, top, width, height, stroke="black", fill=None, lineWidth=1):
         ret = ImageDraw.Draw(image)
@@ -36,7 +46,7 @@ class Graphics:
 
         # draw.text((x, y), text, font=font, align="center", fill=(255, 0, 255))
     
-    def scale(image, factor):
+    def scale(image, factor, dim=1):
         ret = image.resize(
             (image.width*factor, image.height*factor),
             Image.NEAREST
@@ -64,7 +74,7 @@ class Graphics:
         imgWidth = 200
         rowLength = int((1.5 * len(filenames)) ** 0.5) + 1
         image = Image.new(
-            'RGB',
+            'RGBA',
             (
                 imgWidth*rowLength,
                 2*imgWidth*(int(len(filenames)/rowLength)+1),

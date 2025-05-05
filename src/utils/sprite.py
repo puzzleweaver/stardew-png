@@ -1,6 +1,8 @@
+import copy
 from math import ceil
 from utils.graphics import Graphics
 from utils.file import File
+from PIL import Image
 
 class Box:
     """
@@ -15,7 +17,7 @@ class Box:
     width: int
     height: int
 
-    def __init__(self, left, top, width, height, exclude=[]):
+    def __init__(self, left, top, width, height):
         left = int(left)
         top = int(top)
         width = int(width)
@@ -23,8 +25,8 @@ class Box:
 
         if(width <= 0): raise ValueError("Box width must be >0")
         if(height <= 0): raise ValueError("Box height must be >0")
-        if(left < 0): raise ValueError("Box left must be >= 0")
-        if(top < 0): raise ValueError("Box top must be >= 0")
+        # if(left < 0): raise ValueError("Box left must be >= 0")
+        # if(top < 0): raise ValueError("Box top must be >= 0")
 
         self.left = left
         self.top = top
@@ -32,21 +34,12 @@ class Box:
         self.height = height
         self.right = left + width
         self.bottom = top + height
-        self.exclude = exclude
-
-    def boundingBox(boxes):
-        if len(boxes) == 0:
-            raise ValueError("Must include at least one box.")
-        ret = boxes[0]
-        for box in boxes:
-            ret = ret.getBoundingBox(box)
-        return ret
     
     def getBoundingBox(self, other):
         left = min(self.left, other.left)
         top = min(self.top, other.top)
         right = max(self.right, other.right)
-        bottom = max(self.right, other.right)
+        bottom = max(self.bottom, other.bottom)
         return Box(
             left,
             top,
@@ -73,6 +66,14 @@ class Box:
             self.top,
             self.right,
             self.bottom,
+        )
+    
+    def zoom(self, amount):
+        return Box(
+            self.left + self.width*amount,
+            self.top + self.height*amount,
+            self.width*(1 - 2*amount),
+            self.height*(1 - 2*amount),
         )
     
     def intersects(self, other):
@@ -116,8 +117,8 @@ class Box:
         xValues[-1] = self.width
         yValues[-1] = self.height
 
-        for i in range(numX):
-            for j in range(numY):
+        for j in range(numY):
+            for i in range(numX):
                 newSubsprites.append(
                     Box(
                         self.left + xValues[i],
@@ -143,9 +144,9 @@ class Box:
 
     def getShifted(self, side, pixels):
         if side == 'l':
-            return Box(self.left-pixels, self.top, self.width, self.height)
+            return Box(self.left-pixels, self.top, self.width+pixels, self.height)
         if side == 't':
-            return Box(self.left, self.top-pixels, self.width, self.height)
+            return Box(self.left, self.top-pixels, self.width, self.height+pixels)
         if side == 'r':
             return Box(self.left, self.top, self.width+pixels, self.height)
         if side == 'b':
@@ -162,6 +163,14 @@ class Box:
             self.width/3,
             self.height/3,
             text,
+        )
+
+    def scale(self, factor):
+        return Box(
+            self.left * factor,
+            self.top * factor,
+            self.width * factor,
+            self.height * factor,
         )
 
     def drawOn(self, image, text):
@@ -184,7 +193,7 @@ class Sheet:
         imgHeight = image.height
         return Sheet(
             filename,
-            [Box(0, 0, imgWidth, imgHeight)]
+            [ Box(0, 0, imgWidth, imgHeight) ]
         )
 
     def merge(self, index1, index2):
@@ -192,10 +201,10 @@ class Sheet:
         box2 = self.subsprites[index2]
         newSubsprite = box1.getBoundingBox(box2)
         return Sheet(
-            self.filename, 
+            self.filename,
             [
                 subsprite for subsprite in self.subsprites
-                if subsprite.intersects(newSubsprite) == False
+                if not subsprite.intersects(newSubsprite)
             ] + [ newSubsprite ],
         )
     
@@ -222,16 +231,9 @@ class Sheet:
         )
     
     def getShifted(self, index, side, pixels):
-        oldSubsprite = self.subsprites[index]
-        newSubsprite = oldSubsprite.getShifted(side, pixels)
-        return Sheet(
-            self.filename,
-            [
-                subsprite
-                if subsprite != oldSubsprite else newSubsprite
-                for subsprite in self.subsprites
-            ],
-        )
+        newSubsprites = copy.deepcopy(self.subsprites)
+        newSubsprites[index] = self.subsprites[index].getShifted(side, pixels)
+        return Sheet(self.filename, newSubsprites)
     
     def getSubimage(self, index):
         image = File.getImage(self.filename)
@@ -261,14 +263,18 @@ class Sheet:
 
         return f"{path}/{name}/{subfilename}"
         
-    def drawOn(self, image):
+    def drawOn(self, image, viewport):
+        background = Graphics.getBackground(image.width, image.height)
+        image = Image.alpha_composite(background, image)
         factor = 6
-        disp = Graphics.scale(image, factor)
+        size = max(viewport.width, viewport.height)
+        disp = Graphics.scale(image, factor, size)
         index = 0
-        for sprite in self.subsprites:
-            sprite.scale(factor).drawOn(disp, f"{index}")
+        for box in self.subsprites:
+            box.scale(factor).drawOn(disp, f"{index}")
             index += 1
-        File.displayImage(disp)
+        print(viewport.scale(factor).getLTRB())
+        File.displayImage(disp.crop(viewport.scale(factor).getLTRB()))
 
     def save(self):
         for i in range(len(self.subsprites)):
