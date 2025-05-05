@@ -117,7 +117,7 @@ def divide(args):
     numY = args["numY"]
 
     setSheet(
-        sheet.slice(index, numX, numY)
+        sheet.getSliced(index, numX, numY)
     )
     display(f"Sliced {index} into {numX}x{numY} sprites")
 divideCommand = Command(
@@ -152,23 +152,44 @@ divisorsCommand = Command(
 )
 
 def cut(args):
-    index = args["index"]
+    global sheet
     axis = args["axis"]
+    index = args["index"]
     pixels = args["pixels"]
-
-    if axis not in ['x', 'y']:
-        raise ValueError("Axis must be either 'x' or 'y'.")
-
-    setSheet(
-        sheet.cut(index, axis, pixels)
-    )
+    setSheet(sheet.getCut(index, axis, pixels))
     display(f"Cut {index} with {axis}={pixels}")
 cutCommand = Command(
     "c",
     "Cut",
     "Cut a sprite at a relative x or y coordinate.",
-    [ Arg.intType("index"), Arg.stringType("axis"), Arg.intType("pixels") ],
+    [ 
+        Arg.enumType("axis", ['x', 'y']), 
+        Arg.intType("index"), 
+        Arg.intType("pixels"),
+    ],
     cut,
+)
+
+def shift(args):
+    global sheet
+    side = args["side"]
+    index = args["index"]
+    pixels = args["pixels"]
+    
+    setSheet(
+        sheet.getShifted(index, side, pixels)
+    )
+    display(f"Shifted {index} on {side} by {pixels}px")
+shiftCommand = Command(
+    "sh",
+    "Shift",
+    "Expand a box on a side (l/t/r/b)",
+    [ 
+        Arg.enumType("side", ['l', 't', 'r', 'b']), 
+        Arg.intType("index"), 
+        Arg.intType("pixels"),
+    ],
+    shift
 )
 
 def undo(args):
@@ -210,6 +231,7 @@ Program(
         mergeCommand,
         divideCommand,
         cutCommand,
+        shiftCommand,
 
         divisorsCommand,
         zoomCommand,

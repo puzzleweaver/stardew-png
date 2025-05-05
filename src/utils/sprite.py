@@ -1,9 +1,8 @@
-from math import ceil, sqrt
+from math import ceil
 from utils.graphics import Graphics
 from utils.file import File
-from PIL import Image
 
-class Subsprite:
+class Box:
     """
     This class describes all the data to be collected about an image,
     for example the sprites it contains plus metadata about those sprites.
@@ -11,28 +10,48 @@ class Subsprite:
 
     left: int
     top: int
+    right: int
+    bottom: int
     width: int
     height: int
 
-    def __init__(self, left, top, width, height):
-        self.left = int(left)
-        self.top = int(top)
-        self.width = int(width)
-        self.height = int(height)
+    def __init__(self, left, top, width, height, exclude=[]):
+        left = int(left)
+        top = int(top)
+        width = int(width)
+        height = int(height)
 
-    def getRight(self):
-        return self.left + self.width
-    
-    def getBottom(self):
-        return self.top + self.height
+        if(width <= 0): raise ValueError("Box width must be >0")
+        if(height <= 0): raise ValueError("Box height must be >0")
+        if(left < 0): raise ValueError("Box left must be >= 0")
+        if(top < 0): raise ValueError("Box top must be >= 0")
 
-    def getLeftTop(self):
-        return (self.left, self.top)
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+        self.right = left + width
+        self.bottom = top + height
+        self.exclude = exclude
+
+    def boundingBox(boxes):
+        if len(boxes) == 0:
+            raise ValueError("Must include at least one box.")
+        ret = boxes[0]
+        for box in boxes:
+            ret = ret.getBoundingBox(box)
+        return ret
     
-    def getRightBottom(self):
-        return (
-            self.getRight(),
-            self.getBottom(),
+    def getBoundingBox(self, other):
+        left = min(self.left, other.left)
+        top = min(self.top, other.top)
+        right = max(self.right, other.right)
+        bottom = max(self.right, other.right)
+        return Box(
+            left,
+            top,
+            right - left,
+            bottom - top,
         )
     
     def divisorsOf(n):
@@ -44,15 +63,21 @@ class Subsprite:
 
     def getDivisors(self):
         return (
-            Subsprite.divisorsOf(self.width),
-            Subsprite.divisorsOf(self.height),
+            Box.divisorsOf(self.width),
+            Box.divisorsOf(self.height),
         );
+
+    def getLTRB(self):
+        return (
+            self.left,
+            self.top,
+            self.right,
+            self.bottom,
+        )
     
     def intersects(self, other):
-        (l, t) = self.getLeftTop()
-        (r, b) = self.getRightBottom()
-        (ol, ot) = other.getLeftTop()
-        (oR, ob) = other.getRightBottom()
+        l,t,r,b = self.getLTRB()
+        ol,ot,oR,ob = other.getLTRB()
         maxSeparation = max(
             max(
                 ol - r,
@@ -65,26 +90,40 @@ class Subsprite:
         )
         return maxSeparation < 0
     
+    def contains(self, x, y):
+        return x >= self.left and x < self.right and y >= self.top and y < self.bottom
+    
     def scale(self, factor):
-        return Subsprite(
+        return Box(
             self.left*factor,
             self.top*factor,
             self.width*factor,
             self.height*factor,
         )
     
-    def getSliced(self, wide, tall):
-        spriteWidth = self.width/wide
-        spriteHeight = self.height/tall
+    def getSliced(self, numX, numY):
         newSubsprites = []
-        for i in range(wide):
-            for j in range(tall):
+        if(numX  > self.width/2 or numY > self.height/2):
+            raise ValueError(f"Cannot divide {self.width}x{self.height} into {numX}x{numY}.")
+        
+        xValues = [
+            int(self.width*i/numX) for i in range(0, numX+1)
+        ]
+        yValues = [
+            int(self.height*i/numY) for i in range(0, numY+1)
+        ]
+        
+        xValues[-1] = self.width
+        yValues[-1] = self.height
+
+        for i in range(numX):
+            for j in range(numY):
                 newSubsprites.append(
-                    Subsprite(
-                        self.left + i*spriteWidth, 
-                        self.top + j*spriteHeight, 
-                        spriteWidth,
-                        spriteHeight,   
+                    Box(
+                        self.left + xValues[i],
+                        self.top + yValues[j],
+                        xValues[i+1] - xValues[i],
+                        yValues[j+1] - yValues[j],
                     )
                 )
         return newSubsprites
@@ -92,18 +131,30 @@ class Subsprite:
     def getCut(self, axis, pixels):
         if axis == 'x':
             return [
-                Subsprite(self.left, self.top, pixels, self.height),
-                Subsprite(self.left+pixels, self.top, self.width-pixels, self.height)
+                Box(self.left, self.top, pixels, self.height),
+                Box(self.left+pixels, self.top, self.width-pixels, self.height)
             ]
         elif axis == 'y':
             return [
-                Subsprite(self.left, self.top, self.width, pixels),
-                Subsprite(self.left, self.top+pixels, self.width, self.height-pixels)
+                Box(self.left, self.top, self.width, pixels),
+                Box(self.left, self.top+pixels, self.width, self.height-pixels)
             ]
         else: raise f"Invalid Axis: {axis}"
 
-    def drawOn(self, image, text):
-        Graphics.drawRect(image, self.left, self.top, self.width, self.height)
+    def getShifted(self, side, pixels):
+        if side == 'l':
+            return Box(self.left-pixels, self.top, self.width, self.height)
+        if side == 't':
+            return Box(self.left, self.top-pixels, self.width, self.height)
+        if side == 'r':
+            return Box(self.left, self.top, self.width+pixels, self.height)
+        if side == 'b':
+            return Box(self.left, self.top, self.width, self.height+pixels)
+
+    def drawRect(self, image, fill=None, stroke="black"):
+        Graphics.drawRect(image, self.left, self.top, self.width, self.height, fill=fill, stroke=stroke)
+
+    def drawText(self, image, text):
         Graphics.drawText(
             image,
             self.left+self.width/2,
@@ -113,11 +164,15 @@ class Subsprite:
             text,
         )
 
+    def drawOn(self, image, text):
+        self.drawRect(image)
+        self.drawText(image, text)
+
 class Sheet:
     """Handles a list of subsprites, and operations on that list"""
 
     filename: str
-    subsprites: list[Subsprite]
+    subsprites: list[Box]
 
     def __init__(self, filename, subsprites):
         self.subsprites = subsprites
@@ -129,18 +184,13 @@ class Sheet:
         imgHeight = image.height
         return Sheet(
             filename,
-            [Subsprite(0, 0, imgWidth, imgHeight)]
+            [Box(0, 0, imgWidth, imgHeight)]
         )
 
-    def merge(self, topleftIndex, bottomrightIndex):
-        (left, top) = self.subsprites[topleftIndex].getLeftTop()
-        (right, bottom) = self.subsprites[bottomrightIndex].getRightBottom()
-
-        if left > right or top > bottom:
-            print("Invalid merge, skipping.")
-            return self
-        
-        newSubsprite = Subsprite(left, top, right-left, bottom-top)
+    def merge(self, index1, index2):
+        box1 = self.subsprites[index1]
+        box2 = self.subsprites[index2]
+        newSubsprite = box1.getBoundingBox(box2)
         return Sheet(
             self.filename, 
             [
@@ -149,7 +199,7 @@ class Sheet:
             ] + [ newSubsprite ],
         )
     
-    def slice(self, index, wide, tall):
+    def getSliced(self, index, wide, tall):
         oldSubsprite = self.subsprites[index]
         newSubsprites = oldSubsprite.getSliced(wide, tall)
         return Sheet(
@@ -160,7 +210,7 @@ class Sheet:
             ] + newSubsprites
         )
     
-    def cut(self, index, axis, pixels):
+    def getCut(self, index, axis, pixels):
         oldSubsprite = self.subsprites[index]
         newSubsprites = oldSubsprite.getCut(axis, pixels)
         return Sheet(
@@ -171,6 +221,18 @@ class Sheet:
             ] + newSubsprites
         )
     
+    def getShifted(self, index, side, pixels):
+        oldSubsprite = self.subsprites[index]
+        newSubsprite = oldSubsprite.getShifted(side, pixels)
+        return Sheet(
+            self.filename,
+            [
+                subsprite
+                if subsprite != oldSubsprite else newSubsprite
+                for subsprite in self.subsprites
+            ],
+        )
+    
     def getSubimage(self, index):
         image = File.getImage(self.filename)
         subsprite = self.subsprites[index]
@@ -178,8 +240,8 @@ class Sheet:
             (
                 subsprite.left, 
                 subsprite.top, 
-                subsprite.getRight(), 
-                subsprite.getBottom(),
+                subsprite.right, 
+                subsprite.bottom,
             ),
         )
     
