@@ -20,14 +20,7 @@ if len(sys.argv) != 2:
 
 rootDirectory = sys.argv[1]
 print(f"Unpacking {rootDirectory}")
-
 filenames = File.getNames(rootDirectory)
-
-# dirs = File.getDirectories(r"output")
-# Graphics.displayAll(dirs[0])
-# exit()
-
-# print("\n".join(allFiles))
 
 print(f"{len(filenames)} Files")
 
@@ -36,11 +29,12 @@ def setSheet(newSheet):
     previousSheet = sheet
     sheet = newSheet
 
-def display(caption):
+def display(caption=None):
     with File.getImage(filename) as image:
         sheet.drawOn(image, viewport)
-    print(caption)
-    print(f"current state for {sheet.filename}")
+    if caption is not None:
+        print(caption)
+    print(f"{fileIndex+1}/{len(filenames)} {sheet.filename}")
 
 fileIndex = 0
 
@@ -53,9 +47,6 @@ def resetViewport():
 
 def setFilename(index):
     global sheet, previousSheet, filename, filenames, fileIndex
-    if index == len(filenames):
-        Program.printSpecial("Done! Byyyeee")
-        exit()
 
     fileIndex = index
     filename = filenames[index]
@@ -66,17 +57,29 @@ def setFilename(index):
     sampleOutput = sheet.getSubpath(0)
     if File.exists(sampleOutput):
         print(f"Skipping {filename}...")
-        next()
+        step(1)
         return
-    display("Initial")
+    display()
 
-def next():
-    setFilename(fileIndex+1)
+def step(count):
+    newIndex = fileIndex+count
+    if newIndex == 0 and count < 0:
+        Program.printError("Already at beginning.")
+        return
+    maxIndex = len(filenames)-1
+    if newIndex == maxIndex and count < 0:
+        Program.printSpecial("All Done :?")
+        exit()
+        # Program.printError("Already at end.")
+        # return
+    if newIndex < 0: newIndex = 0
+    if newIndex > maxIndex: newIndex = maxIndex
+    setFilename(newIndex)
 
 def done(args):
     global sheet
     sheet.save()
-    next()
+    step(1)
 doneCommand = Command(
     "done",
     "Done",
@@ -85,9 +88,17 @@ doneCommand = Command(
     done,
 )
 
-def skip(args):
-    next()
-skipCommand = Command("s", "Skip", "Skip to the next sheet.", [], skip)
+def stepFunction(args):
+    count = args["count"]
+    if count == None: count = 1
+    step(count)
+stepCommand = Command(
+    "s",
+    "Step",
+    "Step some number of files forward or backwards.",
+    [ Arg.intType("count").optional() ],
+    stepFunction,
+)
 
 def reset(args):
     global filename
@@ -171,7 +182,7 @@ cutCommand = Command(
     "c",
     "Cut",
     "Cut a sprite at a relative x or y coordinate.",
-    [ 
+    [
         Arg.intType("index"), 
         Arg.enumType("axis", ['x', 'y']), 
         Arg.intType("pixels"),
@@ -185,9 +196,7 @@ def shift(args):
     index = args["index"]
     pixels = args["pixels"]
     
-    setSheet(
-        sheet.getShifted(index, side, pixels)
-    )
+    setSheet(sheet.getShifted(index, side, pixels))
     display(f"Shifted {index} on {side} by {pixels}px")
 shiftCommand = Command(
     "sh",
@@ -214,22 +223,18 @@ undoCommand = Command(
 
 def zoom(args):
     global viewport
-    index = args["index"]
-    if index == None:
+    indices = args["indices"]
+    if indices == []:
         resetViewport()
         display("Reset zoom.")
         return
-    
-    if index == None:
-        raise ValueError("Index must be specified for Zoom To.")
-    setViewport(sheet.subsprites[index])
-    display(f"Zoomed to {index}")
-    
+    setViewport(sheet.getBounds(indices))
+    display(f"Zoomed to show all of {indices}")
 zoomCommand = Command(
     "z",
     "Zoom",
-    "Zoom to an index, or reset if none is specified.",
-    [ Arg.intType("index").optional() ],
+    "Zoom to show one or more boxes, or reset viewport if no indices are given.",
+    [ Arg.intType("indices").variable() ],
     zoom,
 )
 
@@ -240,7 +245,7 @@ def init():
 Program(
     "Unpacker",
     init,
-    [ 
+    [
         mergeCommand,
         divideCommand,
         cutCommand,
@@ -252,7 +257,7 @@ Program(
         undoCommand,
         
         resetCommand,
-        skipCommand,
+        stepCommand,
         doneCommand,
     ],
 ).run()
