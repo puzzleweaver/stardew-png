@@ -123,7 +123,6 @@ class Sheet:
             self.boxes[index]
             for index in indices
         ]
-        print("Got here...")
         return Box.getBounds(boxes)
         
     def drawOn(self, image: PIL.Image, viewport: Box):
@@ -133,15 +132,13 @@ class Sheet:
         disp = Graphics.scale(image, factor, size)
         for index in self.boxes:
             box = self.boxes[index]
-            print(f"Hmm... Box? {box}... Index? {index}")
             box.scale(factor).drawOn(disp, f"{index}")
-        print(viewport.scale(factor).getLTRB())
         File.displayImage(disp.crop(viewport.scale(factor).getLTRB()))
 
     def save(self):
-        for i in range(len(self.boxes)):
-            subimage = self.getSubimage(i)
-            subfilename = self.getSubpath(i)
-            print(subfilename)
+        for index in self.boxes:
+            subimage = self.getSubimage(index)
+            subfilename = self.getSubpath(index)
+            print(f"Saving {subfilename}...", end='')
             File.saveImage(subfilename, subimage)
-            # File.saveMetadataJson()
+            print("Done.")

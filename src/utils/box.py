@@ -39,7 +39,6 @@ class Box:
         self.bottom = top + height
 
     def fromLTRB(l, t, r, b):
-        print(f"From {l} {t} {r} {b}...")
         return Box(l, t, r - l, b - t)
 
     def getBounds(boxes):
