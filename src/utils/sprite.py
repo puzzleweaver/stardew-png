@@ -144,15 +144,15 @@ class Box:
 
     def getShifted(self, side, pixels):
         if side == 'l':
-            return Box(self.left-pixels, self.top, self.width+pixels, self.height)
+            return Box(self.left+pixels, self.top, self.width-pixels, self.height)
         if side == 't':
-            return Box(self.left, self.top-pixels, self.width, self.height+pixels)
+            return Box(self.left, self.top+pixels, self.width, self.height-pixels)
         if side == 'r':
             return Box(self.left, self.top, self.width+pixels, self.height)
         if side == 'b':
             return Box(self.left, self.top, self.width, self.height+pixels)
 
-    def drawRect(self, image, fill=None, stroke="black"):
+    def drawRect(self, image, fill=None, stroke="red"):
         Graphics.drawRect(image, self.left, self.top, self.width, self.height, fill=fill, stroke=stroke)
 
     def drawText(self, image, text):

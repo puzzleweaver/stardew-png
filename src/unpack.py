@@ -172,8 +172,8 @@ cutCommand = Command(
     "Cut",
     "Cut a sprite at a relative x or y coordinate.",
     [ 
-        Arg.enumType("axis", ['x', 'y']), 
         Arg.intType("index"), 
+        Arg.enumType("axis", ['x', 'y']), 
         Arg.intType("pixels"),
     ],
     cut,
@@ -194,8 +194,8 @@ shiftCommand = Command(
     "Shift",
     "Expand a box on a side (l/t/r/b)",
     [ 
+        Arg.intType("index"),
         Arg.enumType("side", ['l', 't', 'r', 'b']), 
-        Arg.intType("index"), 
         Arg.intType("pixels"),
     ],
     shift
