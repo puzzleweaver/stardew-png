@@ -1,37 +1,44 @@
 
 import os
 import subprocess
+from textwrap import wrap
 from termcolor import colored
+
+from utils.format_text import Prints
 
 class Program:
 
     def __init__(self, name, init, commands):
         self.name = name
-        self.commands = commands
-
+        
+        self.commands = Program.completeCommands(name, commands)
         # Clear the terminal at the start, for nicies :3
         Program.clear()
         Program.printSuccess(f"Welcome to {self.name}!")
         init()
+
+    def completeCommands(name, commands):
+        fakeHelpCommand = Command.help(name, [])
+        exitCommand = Command.exitCommand()
+        ret = [fakeHelpCommand] + commands + [exitCommand]
+
+        # circle back because help should know about the added commands...
+        helpCommand = Command.help(name, ret)
+        ret[0] = helpCommand
+        return ret
 
     def clear():
         subprocess.Popen('clear', shell=True).wait()
 
     def parse(self, userInput):
         words = userInput.strip().split()
-        if len(words) > 0 and words[0] == 'exit':
-            Program.printSpecial("Bye Bye ^_^")
-            exit()
-        for command in self.commands:
-            if command.matches(words):
-                try:
-                    command.run(words)
-                except Exception as e:
-                    Program.printError(f"Error calling {command.name}: {e}")
-                return
-        # fall through:
-        self.printGlossary()
-        return None
+        if len(words) == 0: return
+        command = Command.getMatch(words[0], self.commands)
+        if command is not None:
+            try:
+                command.run(words)
+            except Exception as e:
+                Program.printError(f"Error calling {command.name}: {e}")
     
     def printError(message):
         print(colored(message, "red"))
@@ -48,28 +55,6 @@ class Program:
     def run(self):
         while True:
             self.parse(input(" ~> "))
-    
-    def printGlossary(self):
-        out = ""
-
-        maxNameLen = 0
-        maxDescriptionLen = 0
-        for command in self.commands:
-            if maxNameLen < len(command.signature):
-                maxNameLen = len(command.signature)
-            if maxDescriptionLen < len(command.description):
-                maxDescriptionLen = len(command.description)
-
-        spacer = "|" + " "*(maxNameLen + 2) + "|" + " "*(maxDescriptionLen + 2) + "|\n"
-        bumper = "+" + "-"*(maxNameLen+2) + "+" + "-"*(maxDescriptionLen+2) + "+"
-        out += f"{bumper}\n"
-        out += spacer
-        for command in self.commands:
-            out += f"| {command.title.ljust(maxNameLen)} | {' ' * maxDescriptionLen} |\n"
-            out += f"| {command.signature.ljust(maxNameLen)} | {command.description.ljust(maxDescriptionLen)} |\n"
-            out += spacer
-        out += bumper
-        Program.printWarning(f" ~{self.name} Commands~ \n{out}")
 
 class Command:
 
@@ -80,11 +65,57 @@ class Command:
         self.args = args
         self.func = func
         self.signature = " ".join([name] + [arg.signature for arg in args])
+        self.longSignature = " ".join([name] + [arg.longSignature for arg in args])
 
-    def matches(self, words):
-        if len(words) == 0:
-            return False
-        return words[0] == self.name
+    def getMatch(name, commands):
+        for command in commands:
+            if command.name == name:
+                return command
+        return None
+    
+    def exitCommand():
+        def exitFunction(args):
+            Program.printSpecial("Bye Bye ^_^")
+            exit()
+        return Command("exit", "Exit", "Terminate the program.", [], exitFunction)
+
+    def help(name, commands):
+        def printGlossary(args):
+            commandName = args["command"]
+            command = None
+            if commandName is None:
+                Program.printWarning(
+                    Prints.columns([
+                        "\n".join([ command.signature for command in commands ]),
+                        "\n".join([ command.title for command in commands ]),
+                    ])
+                )
+                return
+
+            command = Command.getMatch(commandName, commands)
+            if command is None:
+                Program.printError(f"No command called '{commandName}'.")
+                return
+            
+            Program.printWarning(
+                Prints.columns([
+                    "\n".join([
+                        command.title,
+                        " ~ ",
+                        command.longSignature
+                    ]),
+                    "\n".join(
+                        wrap(command.description, 30)
+                    ),
+                ])
+            )
+        return Command(
+            "help",
+            "Help",
+            "Get information on what commands there are, or what a specific command does.",
+            [ Arg.stringType("command").optional() ],
+            printGlossary,
+        )
     
     def run(self, words):
         compiledArgs = {}
@@ -115,7 +146,13 @@ class Arg:
         suffix = ''
         if argType == 'variable': suffix = '[]'
         elif argType == 'optional': suffix = '?'
+        
+        niceValueType = valueType
+        if valueType == 'enum':
+            niceValueType = f"({",".join(enumValues)})"
+
         self.signature = f"${name}{suffix}" # ({valueType}{suffix})"
+        self.longSignature = f"${name}:{niceValueType}{suffix}"
 
     def intType(name):
         return Arg(name, "int")

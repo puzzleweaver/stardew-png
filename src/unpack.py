@@ -63,29 +63,31 @@ def setFilename(index):
 
 def step(count):
     newIndex = fileIndex+count
-    if newIndex == 0 and count < 0:
+    maxIndex = len(filenames)-1
+
+    # catch no op cases
+    if fileIndex == 0 and count < 0:
         Program.printError("Already at beginning.")
         return
-    maxIndex = len(filenames)-1
-    if newIndex == maxIndex and count < 0:
+    if fileIndex == maxIndex and count > 0:
         Program.printSpecial("All Done :?")
         exit()
-        # Program.printError("Already at end.")
-        # return
+        
+    # clamp
     if newIndex < 0: newIndex = 0
     if newIndex > maxIndex: newIndex = maxIndex
+
     setFilename(newIndex)
 
-def done(args):
+def save(args):
     global sheet
     sheet.save()
-    step(1)
 doneCommand = Command(
-    "done",
-    "Done",
-    "Save current sheet configuration",
+    "save",
+    "Save",
+    "Save the current sheet configuration into the output directory.",
     [],
-    done,
+    save,
 )
 
 def stepFunction(args):
@@ -95,7 +97,7 @@ def stepFunction(args):
 stepCommand = Command(
     "s",
     "Step",
-    "Step some number of files forward or backwards.",
+    "Step some number of files forward or backwards, defauts to one step forwards.",
     [ Arg.intType("count").optional() ],
     stepFunction,
 )
@@ -201,7 +203,7 @@ def shift(args):
 shiftCommand = Command(
     "sh",
     "Shift",
-    "Expand a box on a side (l/t/r/b)",
+    "Expand a box on one side.\nMay result in overlapping or disjointed boxes",
     [ 
         Arg.intType("index"),
         Arg.enumType("side", ['l', 't', 'r', 'b']), 

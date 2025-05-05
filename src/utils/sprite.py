@@ -1,5 +1,6 @@
 import copy
 from math import ceil
+import random
 from utils.graphics import Graphics
 from utils.file import File
 from PIL import Image
@@ -161,9 +162,17 @@ class Box:
             return Box(self.left, self.top, self.width, self.height+pixels)
 
     def drawRect(self, image, fill=None, stroke="red"):
-        Graphics.drawRect(image, self.left, self.top, self.width, self.height, fill=fill, stroke=stroke)
+        Graphics.drawRect(
+            image, 
+            self.left, 
+            self.top, 
+            self.width-1, 
+            self.height-1, 
+            fill=fill,
+            stroke=stroke,
+        )
 
-    def drawText(self, image, text):
+    def drawText(self, image, text, color="black"):
         Graphics.drawText(
             image,
             self.left+self.width/2,
@@ -171,6 +180,7 @@ class Box:
             self.width/3,
             self.height/3,
             text,
+            fill=color,
         )
 
     def scale(self, factor):
@@ -280,8 +290,7 @@ class Sheet:
         return Box.getBounds(boxes)
         
     def drawOn(self, image, viewport):
-        background = Graphics.getBackground(image.width, image.height)
-        image = Image.alpha_composite(background, image)
+        image = Graphics.withBackground(image)
         factor = 6
         size = max(viewport.width, viewport.height)
         disp = Graphics.scale(image, factor, size)

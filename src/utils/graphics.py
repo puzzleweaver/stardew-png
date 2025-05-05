@@ -8,12 +8,29 @@ class Graphics:
 
     def getBackground(width, height):
         image = Image.new('RGBA', (width, height), "#dddddd")
-        dim = 25
+        dim = 5
+        if max(width, height) > 50:
+            dim = 25
         for i in range(ceil(width/dim)):
             for j in range(ceil(height/dim)):
                 if (i+j)%2 == 0:
                     Graphics.drawRect(image, i*dim, j*dim, dim-1, dim-1, stroke=None, fill="#eeeeee", lineWidth=0)
         return image
+    
+    def withBackground(image):
+        background = Graphics.getBackground(image.width, image.height)
+        return Image.alpha_composite(background, image)
+
+    def drawImageInRect(canvas, image, left, top, width, height):
+        size, = Graphics.getSize(image.width, image.height, (width, height)),
+        image = Graphics.withSize(image, (width, height))
+        canvas.paste(
+            image,
+            (
+                left + int(width/2 - size[0]/2),
+                top + int(height/2 - size[1]/2),
+            ),
+        )
 
     def drawRect(image, left, top, width, height, stroke="black", fill=None, lineWidth=1):
         ret = ImageDraw.Draw(image)
@@ -42,7 +59,7 @@ class Graphics:
         top = y-size/2
         if not '\n' in text:
             Graphics.drawRect(image, left, top+size/10, textWidth, size, None, "white")
-        draw.text((left, top), text, font=font, fill="black")
+        draw.text((left, top), text, font=font, fill=fill)
 
         # draw.text((x, y), text, font=font, align="center", fill=(255, 0, 255))
     
@@ -60,24 +77,28 @@ class Graphics:
                     Graphics.drawRect(ret, i*factor, j*factor, 1, 1, stroke=stroke)
         return ret
     
-    def withSize(image, size):
-        widthRatio = size[0]/image.width
-        heightRatio = size[1]/image.height
+    def getSize(width, height, size):
+        widthRatio = size[0]/width
+        heightRatio = size[1]/height
         ratio = min(widthRatio, heightRatio)
+        return (int(ratio*width), int(ratio*height))
+
+    def withSize(image, size):
         ret = image.resize(
-            (int(ratio*image.width), int(ratio*image.height)),
+            Graphics.getSize(image.width, image.height, size),
             Image.NEAREST,
         )
         return ret
     
     def collect(filenames, images, manifest, selected):
         imgWidth = 200
+        pad = 5
         rowLength = int((1.5 * len(filenames)) ** 0.5) + 1
         image = Image.new(
             'RGBA',
             (
                 imgWidth*rowLength,
-                2*imgWidth*(int(len(filenames)/rowLength)+1),
+                2*imgWidth*ceil(len(filenames)/rowLength),
             ),
         )
         index = 0
@@ -98,24 +119,21 @@ class Graphics:
                 lineWidth = 3
             Graphics.drawRect(
                 canvas, 
-                tup[0]+2,
-                tup[1]+2,
-                imgWidth - 5,
-                imgWidth*2 - 5,
+                tup[0]+pad,
+                tup[1]+pad,
+                imgWidth - 2*pad,
+                imgWidth*2 - 2*pad,
                 stroke=stroke,
                 lineWidth=lineWidth
             )
             
             # draw sprite and rect of bounds
-            with Graphics.withSize(images[i], (imgWidth-11, imgWidth-11)) as thumbnail:
-                Graphics.drawRect(
-                    canvas,
-                    tup[0]+4, tup[1]+4,
-                    imgWidth-11, imgWidth-11,
-                    fill="#ffbbbb",
-                    stroke="#ffbbbb",
-                )
-                canvas.paste(thumbnail, (tup[0]+4, tup[1]+4))
+            Graphics.drawImageInRect(
+                canvas,
+                Graphics.withBackground(images[i]),
+                tup[0]+2*pad, tup[1]+2*pad,
+                imgWidth-4*pad, imgWidth-4*pad,
+            )
 
             suffix = filename.split("/")[-1]
             lines = [ f"{suffix}:" ] + tagString.split("\n")
