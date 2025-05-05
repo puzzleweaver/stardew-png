@@ -2,7 +2,7 @@
 from termcolor import colored
 from utils.graphics import Graphics
 from utils.program import Arg, Command, Program
-from utils.sprite import Box, Sheet
+from utils.sheet import Box, Sheet
 from utils.file import File
 import sys
 
@@ -153,7 +153,7 @@ divideCommand = Command(
 def divisorsOf(args):
     index = args["index"]
 
-    sprite = sheet.subsprites[index]
+    sprite = sheet.boxes[index]
     width = sprite.width
     height = sprite.height
     xDivisors, yDivisors = sprite.getDivisors()
@@ -175,18 +175,18 @@ divisorsCommand = Command(
 
 def cut(args):
     global sheet
-    axis = args["axis"]
+    side = args["side"]
     index = args["index"]
     pixels = args["pixels"]
-    setSheet(sheet.getCut(index, axis, pixels))
-    display(f"Cut {index} with {axis}={pixels}")
+    setSheet(sheet.getCut(index, side, pixels))
+    display(f"Cut {index} with {side}={pixels}")
 cutCommand = Command(
     "c",
     "Cut",
-    "Cut a sprite at a relative x or y coordinate.",
+    "Cut a sprite at a coordinate relative to one of its edges.",
     [
         Arg.intType("index"), 
-        Arg.enumType("axis", ['x', 'y']), 
+        Arg.enumType("side", ['l', 't', 'r', 'b']), 
         Arg.intType("pixels"),
     ],
     cut,
