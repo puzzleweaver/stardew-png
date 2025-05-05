@@ -103,10 +103,14 @@ class Command:
 
 class Arg:
 
-    def __init__(self, name, valueType, argType=None):
+    def __init__(self, name, valueType, argType=None, enumValues=None):
         self.name = name
         self.valueType = valueType
         self.argType = argType
+        self.enumValues = enumValues
+
+        if self.valueType == 'enum' and enumValues == None:
+            raise AssertionError('Enums must include a list of accepted values.')
 
         suffix = ''
         if argType == 'variable': suffix = '[]'
@@ -119,11 +123,15 @@ class Arg:
     def stringType(name):
         return Arg(name, "string")
     
+    def enumType(name, enumValues):
+        return Arg(name, "enum", enumValues = enumValues)
+    
     def variable(self):
         return Arg(
             self.name, 
             self.valueType, 
             argType="variable",
+            enumValues=self.enumValues,
         )
     
     def optional(self):
@@ -131,6 +139,7 @@ class Arg:
             self.name,
             self.valueType,
             argType="optional",
+            enumValues=self.enumValues,
         )
     
     def validate(self, words, index):
@@ -157,7 +166,17 @@ class Arg:
         if self.valueType == "string":
             return word
         if self.valueType == "int":
-            intValue = int(word) if word.isdecimal() else None
-            if intValue == None:
+            try:
+                intValue = int(word)
+            except:
                 raise TypeError(f"{self.name} must be an integer.")
             return intValue
+        if self.valueType == "enum":
+            if word not in self.enumValues:
+                quotedValues = [
+                    f"'{value}'" for value in self.enumValues
+                ]
+                oxfordComma = ',' if len(quotedValues) > 2 else ''
+                valuesString = ", ".join(quotedValues[:-1]) + oxfordComma + " or " + quotedValues[-1]
+                raise TypeError(f"{self.name} must be {valuesString}")
+            return word
