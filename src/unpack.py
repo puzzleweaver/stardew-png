@@ -176,16 +176,19 @@ divisorsCommand = Command(
 def cut(args):
     global sheet
     side = args["side"]
-    index = args["index"]
+    indices = args["indices"]
     pixels = args["pixels"]
-    setSheet(sheet.getCut(index, side, pixels))
+    newSheet = sheet
+    for index in indices:
+        newSheet = newSheet.getCut(index, side, pixels)
+    setSheet(newSheet)
     display(f"Cut {index} with {side}={pixels}")
 cutCommand = Command(
     "c",
     "Cut",
     "Cut a sprite at a coordinate relative to one of its edges.",
     [
-        Arg.intType("index"), 
+        Arg.intType("indices").variable(),
         Arg.enumType("side", ['l', 't', 'r', 'b']), 
         Arg.intType("pixels"),
     ],

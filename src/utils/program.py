@@ -118,19 +118,28 @@ class Command:
         )
     
     def run(self, words):
-        compiledArgs = {}
+        processedArgs = {}
         index = 1
         for arg in self.args:
-            compiledArgs[arg.name] = arg.validate(words, index)
-            index += 1
+            processedArg = arg.validate(words, index)
+            processedArgs[arg.name] = processedArg
+            if type(processedArg) is list:
+                index += len(processedArg)
+            elif processedArg is not None:
+                index += 1
+            # Else don't increment index.
+
+        if index != len(words):
+            Program.printError(f"Extra arguments, ")
+            return
 
         # Log EXACTLY what got called....
         niceArgs = ", ".join(
-            [f"{name}={compiledArgs[name]}" for name in compiledArgs]
+            [f"{name}={processedArgs[name]}" for name in processedArgs]
         )
         Program.printWarning(f"{self.name}({niceArgs})")
         
-        self.func(compiledArgs)
+        self.func(processedArgs)
 
 class Arg:
 
@@ -179,12 +188,16 @@ class Arg:
             enumValues=self.enumValues,
         )
     
-    def validate(self, words, index):
+    def validate(self, words: list[str], index: int):
         if self.argType == 'variable':
-            return [
-                self.validateOne(word)
-                for word in words[index:]
-            ]
+            ret = []
+            # Validate words until one is invalid.
+            try:
+                while True:
+                    ret.append(self.validateOne(words[index]))
+                    index += 1
+            except:
+                return ret
         
         elif self.argType == 'optional':
             if len(words) <= index:
@@ -199,7 +212,7 @@ class Arg:
                 raise IndexError(f"Missing argument {self.name}.")
             return self.validateOne(words[index])
 
-    def validateOne(self, word):
+    def validateOne(self, word: str):
         if self.valueType == "string":
             return word
         if self.valueType == "int":
