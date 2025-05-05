@@ -34,8 +34,16 @@ class Box:
         self.height = height
         self.right = left + width
         self.bottom = top + height
+
+    def getBounds(boxes):
+        if len(boxes) == 0:
+            raise ValueError("Must include at least one box.")
+        ret = boxes[0]
+        for box in boxes:
+            ret = ret.getBoundsOnce(box)
+        return ret
     
-    def getBoundingBox(self, other):
+    def getBoundsOnce(self, other):
         left = min(self.left, other.left)
         top = min(self.top, other.top)
         right = max(self.right, other.right)
@@ -262,6 +270,14 @@ class Sheet:
         )
 
         return f"{path}/{name}/{subfilename}"
+    
+    def getBounds(self, indices):
+        boxes = [
+            self.subsprites[index]
+            for index in indices
+        ]
+        print("Got here...")
+        return Box.getBounds(boxes)
         
     def drawOn(self, image, viewport):
         background = Graphics.getBackground(image.width, image.height)
