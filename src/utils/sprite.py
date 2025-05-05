@@ -207,7 +207,7 @@ class Sheet:
     def merge(self, index1, index2):
         box1 = self.subsprites[index1]
         box2 = self.subsprites[index2]
-        newSubsprite = box1.getBoundingBox(box2)
+        newSubsprite = box1.getBoundsOnce(box2)
         return Sheet(
             self.filename,
             [
