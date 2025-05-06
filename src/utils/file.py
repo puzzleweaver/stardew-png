@@ -26,7 +26,6 @@ class File:
         return os.path.isfile(filename)
 
     def createDirectory(path):
-        print(f"Trying to create dir {path}")
         subprocess.Popen(f'mkdir -p {path}', shell=True).wait()
 
     def deleteFile(filename):

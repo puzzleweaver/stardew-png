@@ -84,9 +84,12 @@ class Graphics:
         return (int(ratio*width), int(ratio*height))
 
     def withSize(image, size):
+        resizing = Image.NEAREST
+        if image.width > size[0] or image.height > size[1]:
+            resizing = Image.BICUBIC
         ret = image.resize(
             Graphics.getSize(image.width, image.height, size),
-            Image.NEAREST,
+            resizing,
         )
         return ret
     

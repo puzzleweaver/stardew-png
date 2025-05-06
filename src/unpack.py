@@ -21,6 +21,9 @@ if len(sys.argv) != 2:
 rootDirectory = sys.argv[1]
 print(f"Unpacking {rootDirectory}")
 filenames = File.getNames(rootDirectory)
+if len(filenames) == 0:
+    Program.printError(f"No suitable png files in {rootDirectory}...")
+    exit()
 
 print(f"{len(filenames)} Files")
 

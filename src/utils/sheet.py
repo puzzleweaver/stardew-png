@@ -139,6 +139,5 @@ class Sheet:
         for index in self.boxes:
             subimage = self.getSubimage(index)
             subfilename = self.getSubpath(index)
-            print(f"Saving {subfilename}...", end='')
+            print(f"Saving {subfilename}.")
             File.saveImage(subfilename, subimage)
-            print("Done.")
