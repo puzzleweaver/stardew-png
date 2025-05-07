@@ -1,4 +1,5 @@
 
+import json
 import os
 import subprocess
 
@@ -26,10 +27,28 @@ class File:
         return os.path.isfile(filename)
 
     def createDirectory(path):
+        print(f"Creating folder {path}...", end='')
         subprocess.Popen(f'mkdir -p {path}', shell=True).wait()
+        print("done.")
+
+    def ensureFolderExists(filename):
+        path = '/'.join(filename.split('/')[:-1])
+        File.createDirectory(path)
 
     def deleteFile(filename):
+        print(f"Deleting '{filename}'...", end='')
         subprocess.Popen(f'rm {filename}', shell=True).wait()
+        print('done.')
+
+    def deleteDirectory(filename):
+        print(f"Deleting directory '{filename}'...", end='')
+        subprocess.Popen(f'rm -r {filename}', shell=True).wait()
+        print("done.")
+
+    def copyDirectory(source, dest):
+        print(f"Copying '{source}' into '{dest}'...", end='')
+        subprocess.Popen(f'cp -r {source} {dest}', shell=True).wait()
+        print("done.")
 
     def getNames(directory):
         """
@@ -73,15 +92,9 @@ class File:
         return ret
 
     def saveImage(filename, image):
-        print(f"saving image {filename}...")
-
-        # create the directory if it doesn't exist :eyeroll:
-        path = '/'.join(filename.split('/')[:-1])
-        File.createDirectory(path)
-
+        File.ensureFolderExists(filename)
         image.save(filename)
-        print("done.")
-
+        
     def displayImageFile(filename):
         """Displays an image by filename. """
         Program.clear()
@@ -104,8 +117,14 @@ class File:
             return fallback
         
     def writeText(filename, contents):
+        File.ensureFolderExists(filename)
+        print(f"Writing file {filename}...", end='')
         file = open(filename, "w")
         file.write(contents)
+        print("done.")
+
+    def writeAsJson(filename, data):
+        File.writeText(filename, json.dumps(data))
 
     def displayList(filenames, manifest, selected=[], caption=None):
         File.displayImage(

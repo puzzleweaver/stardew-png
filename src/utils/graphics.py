@@ -108,7 +108,9 @@ class Graphics:
         canvas = Image.new("RGBA", image.size, (0, 0, 0, 0))
         for i in range(len(images)):
             filename = filenames[i]
-            tagString = manifest.getFileTagString(filename)
+            tagString = "\n".join(
+                wrap(" ".join(manifest.getFileTags(filename)), 13),
+            ).replace(" ", ",")
             tup = (
                 imgWidth * (index % rowLength),
                 2*imgWidth * int(index / rowLength),

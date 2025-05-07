@@ -1,4 +1,5 @@
 # Import module
+import json
 from string import ascii_lowercase
 
 from termcolor import colored
@@ -36,7 +37,7 @@ whichCommand = Command(
 def rmtag(args):
     tag = args["tag"]
     newManifest = manifest.withoutTag(tag)
-    saveManifest(newManifest)
+    newManifest.save()
 rmtagCommand = Command(
     "del", "Delete Tag",
     "Delete a tag from the entire manifest.",
@@ -93,6 +94,62 @@ tagsCommand = Command(
     tags
 )
 
+def exportFunction(args):
+    Program.printSpecial("Exporting...")
+    
+    # delete existing exported/ directory
+    File.deleteDirectory("exported")
+
+    # make sure the folders involved are created...
+    File.ensureFolderExists("exported/sprites/")
+    File.ensureFolderExists("exported/tags/")
+    
+    # create exported/sprites/ directory and copy the entire output/ folder into it
+    File.copyDirectory("output/", "exported/sprites/")
+    File.deleteFile("exported/sprites/manifest.json")
+
+    # create files:
+    manifest: Manifest = Manifest.load()
+
+    #  exported/all_tags.json: lists all tags on any image.
+    allTags = manifest.getAllTags()
+    File.writeAsJson("exported/all_tags.json", allTags)
+
+    # helper function for transforming the manifest's filenames so that things work right
+    def correct(filename: str):
+        return "/".join(filename.split("/")[1:])
+
+    #  exported/tags/<tag>.json: lists all files associated with the tag.
+    for tag in allTags:
+        filesWithTag = manifest.getFilesWithTag(tag)
+        filesWithTag = [
+            correct(filename) for filename in filesWithTag
+        ]
+        sharedTags = manifest.getSharedTags(tag)
+        File.writeAsJson(
+            f"exported/tags/{tag}.json",
+            {
+                "files": filesWithTag,
+                "shared": sharedTags,
+            },
+        )
+
+    #  exported/sprites/<sprite path>/<index>_tags.json: lists all tags on the corresponding image.
+    files = [ correct(filename) for filename in File.getNames("output") ]
+    for file in files:
+        tagFilename = f"exported/sprites/{file}".replace(".png", "_tags.json")
+        fileTags = manifest.getFileTags(f"output/{file}")
+        File.writeAsJson(tagFilename, fileTags)
+
+    Program.printSpecial("Donezo :3")
+
+exportCommand = Command(
+    "export", "Export Manifest",
+    "Export the manifest in a format which is consumable for the frontend.",
+    [],
+    exportFunction,
+)
+
 Program(
     "Mass Tagger",
     recalculate,
@@ -101,5 +158,6 @@ Program(
         tagsCommand, 
         whichCommand,
         cleanCommand,
+        exportCommand,
     ],
 ).run()

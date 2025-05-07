@@ -191,7 +191,7 @@ def addTags(args):
         Program.printError("No tags specified")
         return
     
-    newManifest = Manifest.load().withTagsAdded(filenames, newTags)
+    newManifest = Manifest.load().withTags(filenames, newTags)
     newManifest.save()
     displayPage()
 addTagsCommand = Command(
@@ -213,7 +213,7 @@ def removeTags(args):
         return
 
     tagsToRemove = args["tags"]
-    newManifest = Manifest.load().withTagsRemoved(filenames, tagsToRemove)
+    newManifest = Manifest.load().withoutTags(filenames, tagsToRemove)
     newManifest.save()
     displayPage()
 removeTagsCommand = Command(
