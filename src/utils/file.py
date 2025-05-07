@@ -18,7 +18,6 @@ class File:
     def hasExtension(filename, extension):
         """Checks whether a filename has a specified extension."""
         extensionLength = len(extension)
-        print(filename)
         if len(filename.split('.')) > 2: return False
         if len(filename) < extensionLength: return False
         return filename[-extensionLength-1:] == f".{extension}"

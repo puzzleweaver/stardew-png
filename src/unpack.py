@@ -57,11 +57,15 @@ def setFilename(index):
     # img = Image.open(allFiles[0])
     sheet = Sheet.initial(filename)
     previousSheet = None
-    sampleOutput = sheet.getSubpath(0)
-    if File.exists(sampleOutput):
+
+    # skip if done
+    outputDirectory = sheet.getDirectory()
+    outputFiles = File.getNames(outputDirectory)
+    if len(outputFiles) != 0:
         print(f"Skipping {filename}...")
         step(1)
         return
+    
     display()
 
 def step(count):

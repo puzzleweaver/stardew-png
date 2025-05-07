@@ -105,6 +105,7 @@ class Manifest:
             if not File.exists(filename):
                 del newData[filename]
                 removedFiles.append(filename)
+        
 
         return (Manifest(newData), removedFiles)
     

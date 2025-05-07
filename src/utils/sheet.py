@@ -102,6 +102,15 @@ class Sheet:
             ),
         )
     
+    def getDirectory(self):
+        dirs = self.filename.split("/")[1:]
+        path = f"output/{"/".join(dirs[:-1])}"
+
+        filename = dirs[-1]
+        filenameWords = filename.split(".")
+        name = filenameWords[0].replace(" ", "_")
+        return f"{path}/{name}"
+    
     def getSubpath(self, index: int):
         dirs = self.filename.split("/")[1:]
         path = f"output/{"/".join(dirs[:-1])}"
