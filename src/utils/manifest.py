@@ -31,13 +31,7 @@ class Manifest:
         except:
             return []
     
-    def getFileTagString(self, filename):
-        tags = self.getFileTags(filename)
-        return "\n".join(
-            wrap(" ".join(tags), 13)
-        ).replace(" ", ",")
-    
-    def withTagsAdded(self, filenames, addedTags):
+    def withTags(self, filenames, addedTags):
         newData = copy.deepcopy(self.data)
         for filename in filenames:
             newTags = self.getFileTags(filename)
@@ -47,7 +41,7 @@ class Manifest:
             newData[filename] = newTags
         return Manifest(newData)
     
-    def withTagsRemoved(self, filenames, removedTags):
+    def withoutTags(self, filenames, removedTags):
         newData = copy.deepcopy(self.data)
         for filename in filenames:
             newTags = [
@@ -66,6 +60,16 @@ class Manifest:
                 if tag not in tags:
                     tags.append(tag)
         return tags
+    
+    def getSharedTags(self, tag):
+        filesWithTag = self.getFilesWithTag(tag)
+        ret = []
+        for file in filesWithTag:
+            others = self.getFileTags(file)
+            for other in others:
+                if other not in ret:
+                    ret.append(other)
+        return ret
     
     def getFilesWithTag(self, tag):
         filenames = list(self.data.keys())
@@ -90,9 +94,9 @@ class Manifest:
     
     def clean(self):
         """
-        Remove all references to files that don't exist.
-        
-        Returns the cleaned manifest and a list of the files that were removed.
+        Removes:
+         - all references to files that don't exist
+         - the empty tag
         """
         filenames = list(self.data.keys())
         removedFiles = []
@@ -101,7 +105,8 @@ class Manifest:
             if not File.exists(filename):
                 del newData[filename]
                 removedFiles.append(filename)
+
         return (Manifest(newData), removedFiles)
     
     def withoutTag(self, tag):
-        return self.withTagsRemoved(self.getFilesWithTag(tag), [tag])
+        return self.withoutTags(self.getFilesWithTag(tag), [tag])

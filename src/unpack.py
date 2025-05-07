@@ -201,17 +201,20 @@ cutCommand = Command(
 def shift(args):
     global sheet
     side = args["side"]
-    index = args["index"]
+    indices = args["indices"]
     pixels = args["pixels"]
     
-    setSheet(sheet.getShifted(index, side, pixels))
+    newSheet = sheet
+    for index in indices:
+        newSheet = newSheet.getShifted(index, side, pixels)
+    setSheet(newSheet)
     display(f"Shifted {index} on {side} by {pixels}px")
 shiftCommand = Command(
     "sh",
     "Shift",
     "Expand a box on one side.\nMay result in overlapping or disjointed boxes",
     [ 
-        Arg.intType("index"),
+        Arg.intType("indices").variable(),
         Arg.enumType("side", ['l', 't', 'r', 'b']), 
         Arg.intType("pixels"),
     ],

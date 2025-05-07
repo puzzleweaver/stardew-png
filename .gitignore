@@ -2,3 +2,5 @@ temp
 venv
 **/.DS_Store
 **/**.pyc
+exported
+web/data
