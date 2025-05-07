@@ -34,11 +34,13 @@ class Program:
         words = userInput.strip().split()
         if len(words) == 0: return
         command = Command.getMatch(words[0], self.commands)
-        if command is not None:
-            try:
-                command.run(words)
-            except Exception as e:
-                Program.printError(f"Error calling {command.name}: {e}")
+        if command is None:
+            Program.printError(f"Unrecognized command '{words[0]}'...")
+            return
+        try:
+            command.run(words)
+        except Exception as e:
+            Program.printError(f"Error calling {command.name}: {e}")
     
     def printError(message):
         print(colored(message, "red"))
@@ -130,7 +132,7 @@ class Command:
             # Else don't increment index.
 
         if index != len(words):
-            Program.printError(f"Extra arguments, ")
+            Program.printError(f"Extra arguments...")
             return
 
         # Log EXACTLY what got called....

@@ -10,6 +10,15 @@ class Manifest:
     def __init__(self, data):
         self.data = data
 
+    def load():
+        return Manifest.fromJson(
+            File.readText("output/manifest.json", "{}")
+        )
+
+    def save(self):
+        print("Saving manifest...")
+        File.writeText("output/manifest.json", self.toJson())
+
     def fromJson(jsonData):
         return Manifest(json.loads(jsonData))
     

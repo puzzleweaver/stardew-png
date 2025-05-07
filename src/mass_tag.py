@@ -8,17 +8,9 @@ from utils.program import Arg, Command, Program
 
 File.setImageHeight(40)
 
-def getManifest():
-    return Manifest.fromJson(
-        File.readText("output/manifest.json", "{}")
-    )
-
 def recalculate():
     global manifest
-    manifest = getManifest()
-
-def saveManifest(newManifest):
-    File.writeText("output/manifest.json", newManifest.toJson())
+    manifest = Manifest.load()
 
 # Which
 def which(args):
@@ -29,7 +21,7 @@ def which(args):
     
     File.displayList(
         filesWithTag,
-        getManifest(),
+        Manifest.load(),
         caption=f"Everything tagged '{' '.join(tags)}' ({len(filesWithTag)})"
     )
 whichCommand = Command(
@@ -54,8 +46,8 @@ rmtagCommand = Command(
 
 # Clean Manifest
 def clean(args):
-    newManifest, removed = getManifest().clean()
-    saveManifest(newManifest)
+    newManifest, removed = Manifest.load().clean()
+    newManifest.save()
     print(f"Removed tags from manifest: {' '.join(removed)}")
 cleanCommand = Command(
     "clean", "Clean Manifest",
@@ -66,7 +58,7 @@ cleanCommand = Command(
 
 # List Tags
 def tags(args):
-    manifest = getManifest()
+    manifest = Manifest.load()
     allTags = manifest.getAllTags()
     allTags.sort()
 

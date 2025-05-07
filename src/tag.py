@@ -21,15 +21,6 @@ rootDirectory = sys.argv[1]
 print(f"Tagging {rootDirectory}")
 dirs = File.getDirectories(rootDirectory)
 
-def getManifest():
-    return Manifest.fromJson(
-        File.readText("output/manifest.json", "{}")
-    )
-
-# allTags = getManifest().getAllTags()
-# print(allTags)
-# exit()
-
 pageSize = 32
 
 pages = []
@@ -75,7 +66,7 @@ def filenameByIndex(index):
 
 def display(list, caption):
     global selected
-    File.displayList(list, getManifest(), selected=selected, caption=caption)
+    File.displayList(list, Manifest.load(), selected=selected, caption=caption)
 
 def displayPage():
     global currentPageIndex, pages, currentPage
@@ -187,39 +178,49 @@ deselectRangeCommand = Command(
 
 def addTags(args):
     global selected
-    if len(selected) == 0:
-        Program.printError("Nothing selected.")
-        return
 
+    filenames = [ filenameByIndex(index) for index in args["indices"] ]
+    if len(filenames) == 0:
+        filenames = selected
+    if len(filenames) == 0:
+        Program.printError("Nothing specified or selected.")
+        return
+    
     newTags = args["tags"]
     if len(newTags) == 0:
         Program.printError("No tags specified")
         return
     
-    newManifest = getManifest().withTagsAdded(selected, newTags)
-    File.writeText("output/manifest.json", newManifest.toJson())
+    newManifest = Manifest.load().withTagsAdded(filenames, newTags)
+    newManifest.save()
     displayPage()
 addTagsCommand = Command(
     "t", "Tag",
-    "idempotently add one or more tags to all selected files",
-    [ Arg.stringType("tags").variable() ],
-    addTags
+    "\n".join([
+        "idempotently add one or more tags to all selected files.",
+        "The specified tags will all be added to either 1) the specified images or if empty 2) the selected images."
+    ]),
+    [ Arg.intType("indices").variable(), Arg.stringType("tags").variable() ],
+    addTags,
 )
 
 def removeTags(args):
-    if len(selected) == 0:
-        Program.printError("Nothing selected.")
+    filenames = [ filenameByIndex(index) for index in args["indices"] ]
+    if len(filenames) == 0:
+        filenames = selected
+    if len(filenames) == 0:
+        Program.printError("Nothing specified or selected.")
         return
 
     tagsToRemove = args["tags"]
-    newManifest = getManifest().withTagsRemoved(selected, tagsToRemove)
-    File.writeText("output/manifest.json", newManifest.toJson())
+    newManifest = Manifest.load().withTagsRemoved(filenames, tagsToRemove)
+    newManifest.save()
     displayPage()
 removeTagsCommand = Command(
-    "ut", "UnTag",
-    "idempotently remove tags from the selected files",
-    [ Arg.stringType("tags").variable() ],
-    removeTags
+    "ut", "Remove Tags",
+    "idempotently remove tags from the selected files.\n\nIndex system works the same as the t command's.",
+    [ Arg.stringType("indices").variable(), Arg.stringType("tags").variable() ],
+    removeTags,
 )
 
 def removeFile(args):
