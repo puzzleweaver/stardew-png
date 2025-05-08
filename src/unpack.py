@@ -48,7 +48,7 @@ def resetViewport():
     with File.getImage(filename) as image:
         setViewport(Box(0, 0, image.width, image.height))
 
-def setFilename(index):
+def setFilename(index, show=True):
     global sheet, previousSheet, filename, filenames, fileIndex
 
     fileIndex = index
@@ -58,15 +58,29 @@ def setFilename(index):
     sheet = Sheet.initial(filename)
     previousSheet = None
 
-    # skip if done
+    caption = None
+
+    # see if there was already work here
     outputDirectory = sheet.getDirectory()
+    progressFilename = f"{outputDirectory}/progress.json"
+    if File.exists(progressFilename):
+        sheet = Sheet.fromData(File.readJson(progressFilename))
+        caption = "Loaded from progress.json."
+
     outputFiles = File.getNames(outputDirectory)
     if len(outputFiles) != 0:
         print(f"Skipping {filename}...")
         step(1)
         return
     
-    display()
+    # skip it if it's already done.
+    # TODO make it possible to keep editing one like this.
+    if len(outputFiles) != 0:
+        print(f"Skipping {filename}...")
+        step(1)
+        return
+    
+    display(caption)
 
 def step(count):
     newIndex = fileIndex+count
@@ -87,14 +101,31 @@ def step(count):
     setFilename(newIndex)
 
 def save(args):
-    global sheet
-    sheet.save()
-doneCommand = Command(
+    File.writeJson(
+        f"{sheet.getDirectory()}/progress.json",
+        sheet.toData(),
+    )
+    Program.printSpecial("Backed up progress.")
+saveCommand = Command(
     "save",
-    "Save",
-    "Save the current sheet configuration into the output directory.",
+    "Save Progress",
+    "Save your work so far. The saved state is used whenever you come back to this sheet, on subsequent runs of the program or via page navigation.",
     [],
     save,
+)
+
+def done(args):
+    global sheet
+    save()
+    sheet.saveFinalImages()
+    Program.printSpecial("Saved output.")
+    step(1)
+doneCommand = Command(
+    "done",
+    "Done",
+    "Save the individual sprites and mark this sheet as 'Done', so that it is skipped in subsequent runs.",
+    [],
+    done,
 )
 
 def stepFunction(args):
@@ -125,18 +156,25 @@ resetCommand = Command(
 )
 
 def merge(args):
-    index1 = args["index1"]
-    index2 = args["index2"]
+    indices = args["indices"]
+    
+    if len(indices)%2 == 1:
+        raise ValueError("Merge requires an even number of indices.")
 
-    setSheet(
-        sheet.merge(index1, index2)
-    )
-    display(f"Merged {index1} and {index2}.")
+    newSheet = sheet
+    pairs = []
+    for i in range(int(len(indices)/2)):
+        index1 = indices[i*2]
+        index2 = indices[i*2 + 1]
+        newSheet = newSheet.merge(index1, index2)
+        pairs.append([index1, index2])
+    setSheet(newSheet)
+    display(f"Merged Pairs: {pairs}")
 mergeCommand = Command(
     "m",
     "Merge Boxes",
-    "Merge two boxes by index. Replaces everything underneath with their bounding box.",
-    [ Arg.intType("index1"), Arg.intType("index2")],
+    "Merge pairs of boxes by index. Replaces everything underneath with the bounding box.",
+    [ Arg.intType("indices").variable() ],
     merge,
 )
 
@@ -273,6 +311,7 @@ Program(
         
         resetCommand,
         stepCommand,
+        saveCommand,
         doneCommand,
     ],
 ).run()

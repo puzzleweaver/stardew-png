@@ -122,8 +122,11 @@ class File:
         file.write(contents)
         print("done.")
 
-    def writeAsJson(filename, data):
+    def writeJson(filename, data):
         File.writeText(filename, json.dumps(data))
+
+    def readJson(filename):
+        return json.loads(File.readText(filename, None))
 
     def displayList(filenames, manifest, selected=[], caption=None):
         File.displayImage(
