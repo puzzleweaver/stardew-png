@@ -16,6 +16,21 @@ class Sheet:
         self.boxes = boxes
         self.filename = filename
 
+    def fromData(data):
+        boxes = {}
+        for boxData in data["boxes"]:
+            boxes[boxData["i"]] = Box.fromData(boxData)
+        return Sheet(
+            data["filename"],
+            boxes,
+        )
+    
+    def toData(self):
+        return {
+            "filename": self.filename,
+            "boxes": [ self.boxes[i].toData(i) for i in self.boxes]
+        }
+
     def initial(filename: str):
         image = File.getImage(filename)
         imgWidth = image.width
@@ -102,6 +117,15 @@ class Sheet:
             ),
         )
     
+    def getDirectory(self):
+        dirs = self.filename.split("/")[1:]
+        path = f"output/{"/".join(dirs[:-1])}"
+
+        filename = dirs[-1]
+        filenameWords = filename.split(".")
+        name = filenameWords[0].replace(" ", "_")
+        return f"{path}/{name}"
+    
     def getSubpath(self, index: int):
         dirs = self.filename.split("/")[1:]
         path = f"output/{"/".join(dirs[:-1])}"
@@ -135,7 +159,7 @@ class Sheet:
             box.scale(factor).drawOn(disp, f"{index}")
         File.displayImage(disp.crop(viewport.scale(factor).getLTRB()))
 
-    def save(self):
+    def saveFinalImages(self):
         for index in self.boxes:
             subimage = self.getSubimage(index)
             subfilename = self.getSubpath(index)

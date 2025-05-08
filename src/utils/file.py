@@ -18,7 +18,6 @@ class File:
     def hasExtension(filename, extension):
         """Checks whether a filename has a specified extension."""
         extensionLength = len(extension)
-        print(filename)
         if len(filename.split('.')) > 2: return False
         if len(filename) < extensionLength: return False
         return filename[-extensionLength-1:] == f".{extension}"
@@ -123,8 +122,11 @@ class File:
         file.write(contents)
         print("done.")
 
-    def writeAsJson(filename, data):
+    def writeJson(filename, data):
         File.writeText(filename, json.dumps(data))
+
+    def readJson(filename):
+        return json.loads(File.readText(filename, None))
 
     def displayList(filenames, manifest, selected=[], caption=None):
         File.displayImage(

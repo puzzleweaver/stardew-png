@@ -37,6 +37,16 @@ class Box:
         self.height = height
         self.right = left + width
         self.bottom = top + height
+        
+    def toData(self, index):
+        return {
+            "i": index, 
+            "ltwh": [self.left, self.top, self.width, self.height],
+        }
+    
+    def fromData(data):
+        ltwh = data["ltwh"]
+        return Box(ltwh[0], ltwh[1], ltwh[2], ltwh[3])
 
     def fromLTRB(l, t, r, b):
         return Box(l, t, r - l, b - t)

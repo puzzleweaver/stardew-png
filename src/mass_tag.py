@@ -113,7 +113,7 @@ def exportFunction(args):
 
     #  exported/all_tags.json: lists all tags on any image.
     allTags = manifest.getAllTags()
-    File.writeAsJson("exported/all_tags.json", allTags)
+    File.writeJson("exported/all_tags.json", allTags)
 
     # helper function for transforming the manifest's filenames so that things work right
     def correct(filename: str):
@@ -126,7 +126,7 @@ def exportFunction(args):
             correct(filename) for filename in filesWithTag
         ]
         sharedTags = manifest.getSharedTags(tag)
-        File.writeAsJson(
+        File.writeJson(
             f"exported/tags/{tag}.json",
             {
                 "files": filesWithTag,
@@ -139,7 +139,7 @@ def exportFunction(args):
     for file in files:
         tagFilename = f"exported/sprites/{file}".replace(".png", "_tags.json")
         fileTags = manifest.getFileTags(f"output/{file}")
-        File.writeAsJson(tagFilename, fileTags)
+        File.writeJson(tagFilename, fileTags)
 
     Program.printSpecial("Donezo :3")
 
