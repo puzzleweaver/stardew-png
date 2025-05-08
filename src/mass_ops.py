@@ -36,16 +36,18 @@ whichCommand = Command(
 )
 
 # Remove Tags
-def rmtag(args):
+def rmtags(args):
     tagsToRemove = args["tags"]
     for localTags in LocalTags.getAll():
-        newLocalTags = localTags.withoutTags(tagsToRemove)
-        newLocalTags.save()
+        localTags.withoutTags(
+            localTags.getIndices(), 
+            tagsToRemove,
+        ).save()
 rmtagCommand = Command(
     "rmtag", "Remove Tag",
     "Remove a tag everywhere it appears.",
     [ Arg.stringType("tags").variable() ],
-    rmtag
+    rmtags
 )
 
 def crop(args):
@@ -67,16 +69,26 @@ cropCommand = Command(
 )
 
 # # Clean Manifest
-# def clean(args):
-#     newManifest, removed = GlobalTags.load().clean()
-#     newManifest.save()
-#     print(f"Removed tags from manifest: {' '.join(removed)}")
-# cleanCommand = Command(
-#     "clean", "Clean Manifest",
-#     "Removes all nonexistant files from the manifest.",
-#     [],
-#     clean,
-# )
+def clean(args):
+    Program.printSpecial("Removing empty tag...")
+    rmtags({ "tags": [''] })
+    Program.printSpecial("Done.")
+
+    for localTags in LocalTags.getAll():
+        newLocalTags = localTags
+        for index in localTags.getIndices():
+            file = f"{localTags.directory}/{index}.png"
+            if not File.exists(file):
+                newLocalTags= newLocalTags.withoutIndex(index)
+                print(f"Deleted {file}.")
+        newLocalTags.save()
+
+cleanCommand = Command(
+    "clean", "Clean Manifest",
+    "Removes all nonexistant files from the manifest.",
+    [],
+    clean,
+)
 
 # List Tags
 def list(args):
@@ -127,7 +139,13 @@ def exportFunction(args):
     
     # create exported/sprites/ directory and copy the entire output/ folder into it
     # TODO only copy the image files over.
-    File.copyDirectory("output/", "exported/sprites/")
+    files = File.getNames("output")
+    print("Copying images", end='')
+    for file in files:
+        newFile = "exported/sprites/" + "/".join(file.split("/")[1:])
+        File.saveImage(newFile, File.getImage(file))
+        print('.', end='')
+    print("done.")
 
     # create files:
     globalTags: GlobalTags = GlobalTags.load()
@@ -182,6 +200,7 @@ Program(
         
         # cleanup commands
         cropCommand,
+        cleanCommand,
         
         # export!
         exportCommand,

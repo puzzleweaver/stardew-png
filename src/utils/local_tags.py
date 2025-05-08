@@ -5,11 +5,14 @@ from utils.file import File
 
 class LocalTags:
     directory: str
-    tagsByIndex: dict[int, list[str]]
+    tagsByIndex: dict[str, list[str]]
 
     def __init__(self, directory, tagsByIndex) -> 'LocalTags':
         self.directory = directory
         self.tagsByIndex = tagsByIndex
+
+    def getIndices(self) -> list[str]:
+        return self.tagsByIndex.keys()
 
     def getAll() -> list['LocalTags']:
         directories = File.getDirectories("output")
@@ -20,13 +23,13 @@ class LocalTags:
             )
         return ret
 
-    def initial(directory) -> 'LocalTags':
+    def initial(directory: str) -> 'LocalTags':
         return LocalTags(directory, {})
     
-    def getFilename(directory) -> str:
+    def getFilename(directory: str) -> str:
         return f"{directory}/tags.json"
     
-    def load(directory) -> 'LocalTags':
+    def load(directory: str) -> 'LocalTags':
         filename = LocalTags.getFilename(directory)
         return LocalTags(directory, File.readJson(filename, {}))
         
@@ -34,7 +37,7 @@ class LocalTags:
         filename = LocalTags.getFilename(self.directory)
         File.writeJson(filename, self.tagsByIndex)
 
-    def withTag(self, index, tag) -> 'LocalTags':
+    def withTag(self, index: str, tag: str) -> 'LocalTags':
         index = str(index)
         newTagsByIndex = copy.deepcopy(self.tagsByIndex)
 
@@ -44,7 +47,7 @@ class LocalTags:
 
         return LocalTags(self.directory, newTagsByIndex)
 
-    def withoutTag(self, index, tag) -> 'LocalTags':
+    def withoutTag(self, index: int, tag: str) -> 'LocalTags':
         index = str(index)
         newTagsByIndex = copy.deepcopy(self.tagsByIndex)
 
@@ -54,25 +57,26 @@ class LocalTags:
 
         return LocalTags(self.directory, newTagsByIndex)
     
-    def withoutIndex(self, index) -> 'LocalTags':
+    def withoutIndex(self, index: str) -> 'LocalTags':
+        index = str(index)
         if not index in self.tagsByIndex: return self
         
         newTagsByIndex = copy.deepcopy(self.tagsByIndex)
         del newTagsByIndex[str(index)]
         return LocalTags(self.directory, newTagsByIndex)
 
-    def withTags(self, indices, tags) -> 'LocalTags':
+    def withTags(self, indices: list[str], tags: list[str]) -> 'LocalTags':
         ret = self
         for index in indices:
             for tag in tags:
                 ret = ret.withTag(index, tag)
         return ret
 
-    def getTags(self, index) -> list[str]:
+    def getTags(self, index: str) -> list[str]:
         index = str(index)
         return self.tagsByIndex.get(index, [])
 
-    def withoutTags(self, indices, tags) -> 'LocalTags':
+    def withoutTags(self, indices: list[str], tags: list[str]) -> 'LocalTags':
         ret = self
         for index in indices:
             for tag in tags:

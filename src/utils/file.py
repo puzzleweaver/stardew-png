@@ -49,11 +49,6 @@ class File:
         subprocess.Popen(f'rm -r {filename}', shell=True).wait()
         print("done.")
 
-    def copyDirectory(source, dest):
-        print(f"Copying '{source}' into '{dest}'...", end='')
-        subprocess.Popen(f'cp -r {source} {dest}', shell=True).wait()
-        print("done.")
-
     def getNames(directory):
         """
         Returns relative names of all files under the given directory,
