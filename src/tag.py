@@ -23,7 +23,6 @@ dirs = File.getDirectories(rootDirectory)
 
 manifest = Manifest.load()
 previousManifest = Manifest.load()
-
 def setManifest(newManifest):
     global manifest, previousManifest
     previousManifest = manifest

@@ -93,6 +93,24 @@ class Graphics:
         )
         return ret
     
+    def crop(image):
+        """ Returns a cropped copy of the image, or None if the image is empty. """
+        image = image.convert('RGBA')
+        left, right, top, bottom = image.width, 0, image.height, 0
+        empty = True
+        for i in range(image.width):
+            for j in range(image.height):
+                _r, _g, _b, a = image.getpixel((i, j))
+                if a != 0:
+                    left = min(left, i)
+                    right = max(right, i)
+                    top = min(top, j)
+                    bottom = max(bottom, j)
+                    empty = False
+        if(empty): return None
+        image = image.crop((left, top, right+1, bottom+1))
+        return image
+    
     def collect(filenames, images, manifest):
         imgWidth = 300
         pad = 5

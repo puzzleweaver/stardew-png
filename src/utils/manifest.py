@@ -1,9 +1,8 @@
-
-from textwrap import wrap
 import json
 import copy
 
 from utils.file import File
+from utils.tag_manifest import TagManifest
 
 class Manifest:
 
@@ -18,6 +17,25 @@ class Manifest:
     def save(self):
         print("Saving manifest...")
         File.writeText("output/manifest.json", self.toJson())
+
+    def getDirectories(self) -> list[str]:
+        ret = []
+        for key in self.data:
+            directory = "/".join(key.split("/")[:-1])
+            if directory not in ret:
+                ret.append(directory)
+        return ret
+    
+    def getSubmanifest(self, directory) -> TagManifest:
+        tags = {}
+        for filename in File.getNames(directory):
+            index = filename.split("/")[-1].split(".")[0]
+            if filename in self.data:
+                tags[index] = self.data[filename]
+        return TagManifest(
+            directory,
+            tags,
+        )
 
     def fromJson(jsonData):
         return Manifest(json.loads(jsonData))

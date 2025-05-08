@@ -1,9 +1,11 @@
 # Import module
 import json
 from string import ascii_lowercase
+import traceback
 
 from termcolor import colored
 from utils.file import File
+from utils.graphics import Graphics
 from utils.manifest import Manifest
 from utils.program import Arg, Command, Program
 
@@ -32,7 +34,6 @@ whichCommand = Command(
     which,
 )
 
-    
 # Remove Tags
 def rmtag(args):
     tag = args["tag"]
@@ -43,6 +44,42 @@ rmtagCommand = Command(
     "Delete a tag from the entire manifest.",
     [ Arg.stringType("tag") ],
     rmtag
+)
+
+def distributeManifest(args):
+    manifest = Manifest.load()
+    directories = manifest.getDirectories()
+    for directory in directories:
+        try:
+            tagManifest = manifest.getSubmanifest(directory)
+            tagManifest.save()
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+distributeCommand = Command(
+    "distribute",
+    "Redistribute Manifest",
+    "Take the singular manifest.json file and save it as individual tags.json files in each image's directory.",
+    [],
+    distributeManifest,
+)
+
+def crop(args):
+    # TODO iterate over all output files, crop each image.
+    outputFiles = File.getNames("output")
+    for file in outputFiles:
+        image = File.getImage(file)
+        cropped = Graphics.crop(image)
+        if cropped is not None: 
+            File.saveImage(file, cropped)
+        else:
+            File.deleteFile(file, confirm=False)
+    Program.printSpecial("Done cropping everything :3")
+cropCommand = Command(
+    "crop", "Crop All Images",
+    "Iterate over each image in the output directory, either resave a cropped copy of it, or delete it if it's only transparent.",
+    [],
+    crop,
 )
 
 # Clean Manifest
@@ -91,7 +128,7 @@ tagsCommand = Command(
     "list", "List Tags",
     "List all tags.",
     [],
-    tags
+    tags,
 )
 
 def exportFunction(args):
@@ -158,6 +195,8 @@ Program(
         tagsCommand, 
         whichCommand,
         cleanCommand,
+        distributeCommand,
+        cropCommand,
         exportCommand,
     ],
 ).run()
