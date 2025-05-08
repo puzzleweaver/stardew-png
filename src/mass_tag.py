@@ -106,7 +106,7 @@ def exportFunction(args):
     
     # create exported/sprites/ directory and copy the entire output/ folder into it
     File.copyDirectory("output/", "exported/sprites/")
-    File.deleteFile("exported/sprites/manifest.json")
+    File.deleteFile("exported/sprites/manifest.json", confirm=False)
 
     # create files:
     manifest: Manifest = Manifest.load()

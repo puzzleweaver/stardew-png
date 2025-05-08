@@ -6,6 +6,7 @@ import subprocess
 from PIL import Image
 
 from utils.graphics import Graphics
+from utils.input import Input
 from utils.program import Program
 
 class File:
@@ -34,7 +35,10 @@ class File:
         path = '/'.join(filename.split('/')[:-1])
         File.createDirectory(path)
 
-    def deleteFile(filename):
+    def deleteFile(filename, confirm=True):
+        if confirm:
+            if not Input.getBool(f"Delete {filename}?"):
+                raise PermissionError(f"Won't delete {filename}.")
         print(f"Deleting '{filename}'...", end='')
         subprocess.Popen(f'rm {filename}', shell=True).wait()
         print('done.')
@@ -128,13 +132,12 @@ class File:
     def readJson(filename):
         return json.loads(File.readText(filename, None))
 
-    def displayList(filenames, manifest, selected=[], caption=None):
+    def displayList(filenames, manifest, caption=None):
         File.displayImage(
             Graphics.collect(
                 filenames,
                 [ File.getImage(filename) for filename in filenames ],
                 manifest,
-                selected,
             )
         )
         if caption != None:

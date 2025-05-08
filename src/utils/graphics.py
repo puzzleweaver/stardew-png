@@ -93,10 +93,10 @@ class Graphics:
         )
         return ret
     
-    def collect(filenames, images, manifest, selected):
-        imgWidth = 200
+    def collect(filenames, images, manifest):
+        imgWidth = 300
         pad = 5
-        rowLength = int((1.5 * len(filenames)) ** 0.5) + 1
+        rowLength = int((3 * len(filenames)) ** 0.5) + 1
         image = Image.new(
             'RGBA',
             (
@@ -119,11 +119,8 @@ class Graphics:
             # draw border
             stroke = "#bbbbbb"
             lineWidth = 1
-            if filename in selected:
-                stroke = "red"
-                lineWidth = 3
             Graphics.drawRect(
-                canvas, 
+                canvas,
                 tup[0]+pad,
                 tup[1]+pad,
                 imgWidth - 2*pad,

@@ -116,7 +116,7 @@ saveCommand = Command(
 
 def done(args):
     global sheet
-    save()
+    save({})
     sheet.saveFinalImages()
     Program.printSpecial("Saved output.")
     step(1)
