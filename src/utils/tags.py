@@ -4,7 +4,6 @@ from utils.file import File
 
 
 class Tags:
-
     directory: str
     tagsByIndex: dict[int, list[str]]
 

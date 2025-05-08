@@ -2,21 +2,26 @@ import json
 import copy
 
 from utils.file import File
+from utils.program_exception import ProgramException
 from utils.tags import Tags
 
 class Manifest:
 
     def __init__(self, data):
         self.data = data
-
+    
     def load():
-        return Manifest.fromJson(
-            File.readText("output/manifest.json", "{}")
-        )
+        directories = File.getDirectories("output")
+        newData = {}
+        for directory in directories:
+            localTags = Tags.load(directory)
+            for index in localTags.tagsByIndex:
+                filename = f"{directory}/{index}.png"
+                newData[filename] = localTags.getTags(index)
+        return Manifest(newData)
 
     def save(self):
-        print("Saving manifest...")
-        File.writeText("output/manifest.json", self.toJson())
+        raise ProgramException("Unimplemented: still needs to be refactored to work using local manifests.")
 
     def getDirectories(self) -> list[str]:
         ret = []

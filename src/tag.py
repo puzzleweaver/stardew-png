@@ -2,7 +2,6 @@
 from math import ceil
 import sys
 from utils.file import File
-from utils.manifest import Manifest
 from utils.program import Arg, Command, Program
 from utils.program_exception import ProgramException
 from utils.tags import Tags
@@ -192,8 +191,12 @@ def stepFunction(args):
     count = args["count"]
     if count is None: count = 1
 
-    if (count > 0 and currentPageIndex == len(pages)-1) or (count < 0 and currentPageIndex == 0):
-        raise ProgramException("No more in that direction.")
+    if (count > 0 and currentPageIndex == len(pages)-1):
+        Program.printSpecial('"This is the end" --Adele')
+        return
+    if (count < 0 and currentPageIndex == 0):
+        Program.printWarning('Already at first page.')
+        return
     previousTags = None
 
     step(count)

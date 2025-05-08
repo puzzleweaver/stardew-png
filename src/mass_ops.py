@@ -24,7 +24,7 @@ def which(args):
     
     File.displayList(
         filesWithTag,
-        Manifest.load(),
+        [" ".join(manifest.getFileTags(file)) for file in filesWithTag],
         caption=f"Everything tagged '{' '.join(tags)}' ({len(filesWithTag)})"
     )
 whichCommand = Command(
@@ -40,8 +40,8 @@ def rmtag(args):
     newManifest = manifest.withoutTag(tag)
     newManifest.save()
 rmtagCommand = Command(
-    "del", "Delete Tag",
-    "Delete a tag from the entire manifest.",
+    "rmtag", "Remove Tag",
+    "Remove a tag everywhere it appears.",
     [ Arg.stringType("tag") ],
     rmtag
 )
@@ -191,12 +191,16 @@ Program(
     "Mass Tagger",
     recalculate,
     [ 
+        # tag commands
         rmtagCommand,
         tagsCommand, 
         whichCommand,
+        
+        # cleanup commands
         cleanCommand,
-        distributeCommand,
         cropCommand,
+        
+        # export!
         exportCommand,
     ],
 ).run()
