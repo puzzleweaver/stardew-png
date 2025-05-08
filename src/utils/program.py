@@ -2,9 +2,11 @@
 import os
 import subprocess
 from textwrap import wrap
+import traceback
 from termcolor import colored
 
 from utils.format_text import Prints
+from utils.program_exception import ProgramException
 
 class Program:
 
@@ -39,8 +41,12 @@ class Program:
             return
         try:
             command.run(words)
-        except Exception as e:
+        except ProgramException as e:
             Program.printError(f"Error calling {command.name}: {e}")
+        except Exception as e:
+            Program.printSpecial(f"Uncaught Exception calling {command.name}... Oepsie Woepsie XD Sowwee uwu\n" + "-"*20 + "\nStacktrace:")
+            traceback.print_exc()
+            Program.printSpecial("-"*20)
     
     def printError(message):
         print(colored(message, "red"))
@@ -152,7 +158,7 @@ class Arg:
         self.enumValues = enumValues
 
         if self.valueType == 'enum' and enumValues == None:
-            raise AssertionError('Enums must include a list of accepted values.')
+            raise ProgramException('Enums must include a list of accepted values.')
 
         suffix = ''
         if argType == 'variable': suffix = '[]'
@@ -211,7 +217,7 @@ class Arg:
             
         else: # normal argument type
             if len(words) <= index:
-                raise IndexError(f"Missing argument {self.name}.")
+                raise ProgramException(f"Missing argument {self.name}.")
             return self.validateOne(words[index])
 
     def validateOne(self, word: str):
@@ -221,7 +227,7 @@ class Arg:
             try:
                 intValue = int(word)
             except:
-                raise TypeError(f"{self.name} must be an integer.")
+                raise ProgramException(f"{self.name} must be an integer.")
             return intValue
         if self.valueType == "enum":
             if word not in self.enumValues:
@@ -230,5 +236,5 @@ class Arg:
                 ]
                 oxfordComma = ',' if len(quotedValues) > 2 else ''
                 valuesString = ", ".join(quotedValues[:-1]) + oxfordComma + " or " + quotedValues[-1]
-                raise TypeError(f"{self.name} must be {valuesString}")
+                raise ProgramException(f"{self.name} must be {valuesString}")
             return word

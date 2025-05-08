@@ -4,6 +4,7 @@ from math import ceil
 from typing import Literal
 
 from utils.graphics import Graphics
+from utils.program_exception import ProgramException
 
 Side = Literal['l', 'r', 't', 'b']
 
@@ -26,10 +27,10 @@ class Box:
         width = int(width)
         height = int(height)
 
-        if(width <= 0): raise ValueError("Box width must be >0")
-        if(height <= 0): raise ValueError("Box height must be >0")
-        # if(left < 0): raise ValueError("Box left must be >= 0")
-        # if(top < 0): raise ValueError("Box top must be >= 0")
+        if(width <= 0): raise ProgramException("Box width must be >0")
+        if(height <= 0): raise ProgramException("Box height must be >0")
+        # if(left < 0): raise ProgramException("Box left must be >= 0")
+        # if(top < 0): raise ProgramException("Box top must be >= 0")
 
         self.left = left
         self.top = top
@@ -53,7 +54,7 @@ class Box:
 
     def getBounds(boxes):
         if len(boxes) == 0:
-            raise ValueError("Must include at least one box.")
+            raise ProgramException("Must include at least one box.")
         ret = boxes[0]
         for box in boxes:
             ret = ret.getBoundsOnce(box)
@@ -129,7 +130,7 @@ class Box:
     def getSliced(self, numX: int, numY: int):
         newBoxes = []
         if(numX  > self.width/2 or numY > self.height/2):
-            raise ValueError(f"Cannot divide {self.width}x{self.height} into {numX}x{numY}.")
+            raise ProgramException(f"Cannot divide {self.width}x{self.height} into {numX}x{numY}.")
         
         xValues = [
             int(self.width*i/numX) for i in range(0, numX+1)
@@ -162,7 +163,7 @@ class Box:
             return [ self.withSide('r', self.right+pixels), self.withSide('l', self.right+pixels) ]
         if side == 'b':
             return [ self.withSide('b', self.bottom+pixels), self.withSide('t', self.bottom+pixels) ]
-        else: raise f"Invalid Side: {side}"
+        else: raise ProgramException(f"Invalid Side: {side}")
 
     def getShifted(self, side: Side, pixels: int):
         if side == 'l': return self.withSide('l', self.left + pixels)
@@ -175,7 +176,7 @@ class Box:
         if side == 't': return Box.fromLTRB(self.left, newValue, self.right, self.bottom)
         if side == 'r': return Box.fromLTRB(self.left, self.top, newValue, self.bottom)
         if side == 'b': return Box.fromLTRB(self.left, self.top, self.right, newValue)
-        raise ValueError("Side must be l/t/r/b.")
+        raise ProgramException("Side must be l/t/r/b.")
     
     def getSide(self, side: Side):
         if side == 'l': return self.left

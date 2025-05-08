@@ -2,6 +2,7 @@
 from termcolor import colored
 from utils.graphics import Graphics
 from utils.program import Arg, Command, Program
+from utils.program_exception import ProgramException
 from utils.sheet import Box, Sheet
 from utils.file import File
 import sys
@@ -64,7 +65,7 @@ def setFilename(index, show=True):
     outputDirectory = sheet.getDirectory()
     progressFilename = f"{outputDirectory}/progress.json"
     if File.exists(progressFilename):
-        sheet = Sheet.fromData(File.readJson(progressFilename))
+        sheet = Sheet.fromData(File.readJson(progressFilename), None)
         caption = "Loaded from progress.json."
 
     outputFiles = File.getNames(outputDirectory)
@@ -159,7 +160,7 @@ def merge(args):
     indices = args["indices"]
     
     if len(indices)%2 == 1:
-        raise ValueError("Merge requires an even number of indices.")
+        raise ProgramException("Merge requires an even number of indices.")
 
     newSheet = sheet
     pairs = []

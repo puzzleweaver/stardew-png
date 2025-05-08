@@ -8,6 +8,7 @@ from PIL import Image
 from utils.graphics import Graphics
 from utils.input import Input
 from utils.program import Program
+from utils.program_exception import ProgramException
 
 class File:
     """Handles all file IO operations."""
@@ -38,7 +39,7 @@ class File:
     def deleteFile(filename, confirm=True):
         if confirm:
             if not Input.getBool(f"Delete {filename}?"):
-                raise PermissionError(f"Won't delete {filename}.")
+                raise ProgramException(f"Won't delete {filename}.")
         print(f"Deleting '{filename}'...", end='')
         subprocess.Popen(f'rm {filename}', shell=True).wait()
         print('done.')
@@ -129,16 +130,18 @@ class File:
     def writeJson(filename, data):
         File.writeText(filename, json.dumps(data))
 
-    def readJson(filename):
-        return json.loads(File.readText(filename, None))
+    def readJson(filename, fallback=None):
+        try:
+            return json.loads(File.readText(filename, None))
+        except:
+            return fallback
 
-    def displayList(filenames, manifest, caption=None):
+    def displayList(filenames, captions, caption=None):
         File.displayImage(
             Graphics.collect(
                 filenames,
                 [ File.getImage(filename) for filename in filenames ],
-                manifest,
+                captions,
             )
         )
-        if caption != None:
-            print(caption)
+        if caption != None: print(caption)

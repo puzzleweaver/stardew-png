@@ -111,7 +111,7 @@ class Graphics:
         image = image.crop((left, top, right+1, bottom+1))
         return image
     
-    def collect(filenames, images, manifest):
+    def collect(filenames, images, captions):
         imgWidth = 300
         pad = 5
         rowLength = int((3 * len(filenames)) ** 0.5) + 1
@@ -126,9 +126,7 @@ class Graphics:
         canvas = Image.new("RGBA", image.size, (0, 0, 0, 0))
         for i in range(len(images)):
             filename = filenames[i]
-            tagString = "\n".join(
-                wrap(" ".join(manifest.getFileTags(filename)), 13),
-            ).replace(" ", ",")
+            captionLines = wrap(captions[i], 20)
             tup = (
                 imgWidth * (index % rowLength),
                 2*imgWidth * int(index / rowLength),
@@ -144,7 +142,7 @@ class Graphics:
                 imgWidth - 2*pad,
                 imgWidth*2 - 2*pad,
                 stroke=stroke,
-                lineWidth=lineWidth
+                lineWidth=lineWidth,
             )
             
             # draw sprite and rect of bounds
@@ -156,7 +154,7 @@ class Graphics:
             )
 
             suffix = filename.split("/")[-1]
-            lines = [ f"{suffix}:" ] + tagString.split("\n")
+            lines = [ f"{suffix}:" ] + captionLines
             Graphics.drawText(
                 canvas, 
                 tup[0] + imgWidth/2,

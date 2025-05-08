@@ -4,6 +4,8 @@ import sys
 from utils.file import File
 from utils.manifest import Manifest
 from utils.program import Arg, Command, Program
+from utils.program_exception import ProgramException
+from utils.tags import Tags
 
 File.setImageHeight(40)
 
@@ -21,13 +23,11 @@ rootDirectory = sys.argv[1]
 print(f"Tagging {rootDirectory}")
 dirs = File.getDirectories(rootDirectory)
 
-manifest = Manifest.load()
-previousManifest = Manifest.load()
-def setManifest(newManifest):
-    global manifest, previousManifest
-    previousManifest = manifest
-    manifest = newManifest
-    manifest.save()
+def setTags(newTags):
+    global tags, previousTags
+    previousTags = tags
+    tags = newTags
+    tags.save()
 
 pageSize = 32
 
@@ -35,21 +35,25 @@ pages = []
 currentPageIndex = 0
 
 def step(count, caption=None):
-    global currentPageIndex, currentPage
+    global currentPageIndex, currentPage, currentDirectory
+    global tags, previousTags
     currentPageIndex = currentPageIndex + count
     if currentPageIndex < 0:
         currentPageIndex = 0
     if currentPageIndex >= len(pages):
         currentPageIndex = len(pages)-1
     currentPage = pages[currentPageIndex]
+    currentDirectory = pageDirectories[currentPageIndex]
+    previousTags = tags = Tags.load(currentDirectory)
     messages = []
     if caption is not None: messages.append(caption)
     if count is not 0: messages.append(f"Stepped by {count}.")
     displayPage("\n".join(messages))
 
 def recalculate(caption=None):
-    global pages, allFiles
+    global pages, allFiles, pageDirectories
     pages = []
+    pageDirectories = []
     for directory in dirs:
 
         allFiles = File.getNames(directory)
@@ -57,43 +61,44 @@ def recalculate(caption=None):
 
         subpages = ceil(len(allFiles)/pageSize)
         for i in range(subpages):
-            pages.append(
-                allFiles[i*pageSize : (i+1)*pageSize]
-            )
+            page = [
+                int(file.split("/")[-1].split('.')[0])
+                for file in allFiles[i*pageSize : (i+1)*pageSize]
+            ]
+            pages.append(page)
+            pageDirectories.append(directory)
 
     # freshly clamp page index
     step(0, caption=caption)
 
 def filenameByIndex(index):
-    matches = [
-        filename for filename in currentPage
-        if f"/{index}.png" in filename
-    ]
-    if len(matches) == 0: return None
-    if len(matches) > 1: raise LookupError(f"Fatal: Too many files at index={index}! {matches}")
-    return matches[0]
+    global currentDirectory
+    return f"{currentDirectory}/{index}.png"
 
-def display(list, caption):
-    File.displayList(list, manifest, caption=caption)
+def display(indices, caption):
+    global tags
+    filenames = [ filenameByIndex(index) for index in indices ]
+    captions = [ " ".join(tags.getTags(index)) for index in indices ]
+    File.displayList(filenames, captions, caption=caption)
 
 def displayPage(caption):
-    global currentPageIndex, pages, currentPage
-    global manifest, previousManifest
-    directory = "/".join(currentPage[0].split("/")[:-1])
+    global currentPageIndex, pages, currentPage, currentDirectory
+    global tags, previousTags
     display(
         currentPage,
-        f"Current: {currentPageIndex+1}/{len(pages)}, {directory}\n{caption}",
+        f"Current: {currentPageIndex+1}/{len(pages)}, {currentDirectory}\n{caption}",
     )
 
 def tagFunction(args):
-    global currentPage, manifest
+    global currentPage, tags
+    addedTags = args["tags"]
     indices = args["indices"]
-    filenames = [ filenameByIndex(index) for index in indices ]
-    if len(filenames) == 0: filenames = currentPage
-    newTags = args["tags"]
-    newManifest = manifest.withTags(filenames, newTags)
-    setManifest(newManifest)
-    displayPage(f"Tagged {filenames} with each of {newTags}.")
+    if len(indices) == 0: indices = currentPage
+
+    setTags(
+        tags.withTags(indices, addedTags)
+    )
+    displayPage(f"Tagged {indices} with each of {addedTags}.")
 tagCommand = Command(
     "t", "Tag",
     "\n".join([
@@ -104,14 +109,15 @@ tagCommand = Command(
 )
 
 def untag(args):
-    global currentPage, manifest
-    indices = args["indices"]
-    filenames = [ filenameByIndex(index) for index in indices ]
-    if len(filenames) == 0: filenames = currentPage
+    global currentPage, tags
     tagsToRemove = args["tags"]
-    newManifest = manifest.withoutTags(filenames, tagsToRemove)
-    setManifest(newManifest)
-    displayPage(f"Untagged {filenames} with each of {tagsToRemove}")
+    indices = args["indices"]
+    if len(indices) == 0: indices = currentPage
+
+    setTags(
+        tags.withoutTags(indices, tagsToRemove)
+    )
+    displayPage(f"Untagged {indices} with each of {tagsToRemove}")
 untagCommand = Command(
     "ut", "Untag",
     "Idempotently remove tags from the selected files.\n\nIndex system works the same as the t command's.",
@@ -119,21 +125,27 @@ untagCommand = Command(
     untag,
 )
 
+def getRangeIndices(ranges: list[int]):
+    if len(ranges)%2 != 0:
+        raise ProgramException("Range parameters must have even lengths.")
+    ret = []
+    for i in range(int(len(ranges)/2)):
+        start = ranges[i*2]
+        end = ranges[i*2+1]
+        for index in range(start, end+1):
+            if index not in ret:
+                ret.append(index)
+    return ret
+
 def tagRange(args):
-    global manifest
-    indices = args["ranges"]
-    if len(indices)%2 != 0: raise ValueError("An even number of indices must be provided.")
-    newTags = args["tags"]
-    newManifest = Manifest.load()
-    pairs = []
-    for i in range(int(len(indices)/2)):
-        start = indices[i*2]
-        end = indices[i*2 + 1]
-        filenames = [ filenameByIndex(index) for index in range(start, end+1) ]
-        newManifest = newManifest.withTags(filenames, newTags)
-        pairs.append([start, end])
-    setManifest(newManifest)
-    displayPage(f"Tagged ranges {pairs} with each of {newTags}")
+    global tags
+    addedTags = args["tags"]
+    indices = getRangeIndices(args["ranges"])
+    
+    setTags(
+        tags.withTags(indices, addedTags)
+    )
+    displayPage(f"Tagged indices {indices} with each of {addedTags}")
 tagRangeCommand = Command(
     "tr", "Tag Range",
     "adds tags to all images in inclusive ranges.",
@@ -142,20 +154,13 @@ tagRangeCommand = Command(
 )
 
 def untagRange(args):
-    global manifest
-    indices = args["ranges"]
-    if len(indices)%2 != 0: raise ValueError("An even number of indices must be provided.")
+    global tags
+    indices = getRangeIndices(args["ranges"])
     tagsToRemove = args["tags"]
-    newManifest = Manifest.load()
-    pairs = []
-    for i in range(int(len(indices)/2)):
-        start = indices[i*2]
-        end = indices[i*2 + 1]
-        filenames = [ filenameByIndex(index) for index in range(start, end+1) ]
-        newManifest = newManifest.withTags(filenames, tagsToRemove)
-        pairs.append([start, end])
-    setManifest(newManifest)
-    displayPage(f"Untagged ranges {pairs} with each of {tagsToRemove}")
+    setTags(
+        tags.withoutTags(indices, tagsToRemove)
+    )
+    displayPage(f"Untagged indices {indices} with each of {tagsToRemove}")
 untagRangeCommand = Command(
     "utr", "Untag Range",
     "adds tags to all images in an inclusive range.",
@@ -164,28 +169,32 @@ untagRangeCommand = Command(
 )
 
 def removeFile(args):
-    global previousManifest
-    filenames = args["filenames"]
-    for filename in filenames:
-        filename = filenameByIndex(filename)
-        File.deleteFile(filename)
-        preivousManifest = None
-        recalculate(caption=f"Deleted {filename}")
+    global previousTags, tags
+    indices = args["indices"]
+    for index in indices:
+        filename = filenameByIndex(index)
+        try:
+            File.deleteFile(filename) # will throw error if no consent
+            setTags(tags.withoutIndex(index))
+            recalculate(caption=f"Deleted {filename}")
+            previousTags = None # prevent undo, because you can't undelete the file.
+        except:
+            print(f"Skipping {filename}")
 removeFileCommand = Command(
     "rm", "Remove",
     "Deletes image files by their index.",
-    [ Arg.stringType("filenames").variable() ],
+    [ Arg.stringType("indices").variable() ],
     removeFile
 )
 
 def stepFunction(args):
-    global previousManifest
+    global previousTags
     count = args["count"]
     if count is None: count = 1
 
     if (count > 0 and currentPageIndex == len(pages)-1) or (count < 0 and currentPageIndex == 0):
-        raise ValueError("No more in that direction.")
-    previousManifest = None
+        raise ProgramException("No more in that direction.")
+    previousTags = None
 
     step(count)
 stepCommand = Command(
@@ -196,10 +205,10 @@ stepCommand = Command(
 )
 
 def undo(args):
-    global previousManifest
-    if previousManifest == None:
-        raise ValueError("The previous action isn't possible to undo.")
-    setManifest(previousManifest)
+    global previousTags
+    if previousTags == None:
+        raise ProgramException("The previous action isn't possible to undo.")
+    setTags(previousTags)
     displayPage("Undid previous action.")
 undoCommand = Command(
     "u", "Undo",

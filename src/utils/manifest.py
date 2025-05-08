@@ -2,7 +2,7 @@ import json
 import copy
 
 from utils.file import File
-from utils.tag_manifest import TagManifest
+from utils.tags import Tags
 
 class Manifest:
 
@@ -26,13 +26,13 @@ class Manifest:
                 ret.append(directory)
         return ret
     
-    def getSubmanifest(self, directory) -> TagManifest:
+    def getSubmanifest(self, directory) -> Tags:
         tags = {}
         for filename in File.getNames(directory):
             index = filename.split("/")[-1].split(".")[0]
             if filename in self.data:
                 tags[index] = self.data[filename]
-        return TagManifest(
+        return Tags(
             directory,
             tags,
         )
