@@ -12,13 +12,11 @@ from utils.program import Arg, Command, Program
 
 File.setImageHeight(40)
 
-def recalculate():
-    global globalTags
-    globalTags = GlobalTags.load()
-
 # Which
 def which(args):
     tags = args["tags"]
+
+    globalTags = GlobalTags.load()
 
     filesWithTag = globalTags.getFilesWithTags(tags)
     filesWithTag.sort()
@@ -127,6 +125,8 @@ listCommand = Command(
     list,
 )
 
+
+
 def exportFunction(args):
     Program.printSpecial("Exporting...")
     
@@ -189,13 +189,16 @@ exportCommand = Command(
     exportFunction,
 )
 
+def init():
+    print("Initialized.")
+
 Program(
     "Mass Tagger",
-    recalculate,
-    [ 
+    init,
+    [
         # tag commands
         rmtagCommand,
-        listCommand, 
+        listCommand,
         whichCommand,
         
         # cleanup commands

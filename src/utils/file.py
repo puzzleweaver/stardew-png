@@ -134,9 +134,16 @@ class File:
     def displayList(filenames, captions, caption=None):
         File.displayImage(
             Graphics.collect(
-                filenames,
-                [ File.getImage(filename) for filename in filenames ],
-                captions,
+                [
+                    Graphics.withCaption(
+                        Graphics.withBackground(
+                            File.getImage(filenames[i])
+                        ),
+                        f"[{File.getIndex(filenames[i])}]:\n{captions[i]}",
+                        800, 200,
+                    )
+                    for i in range(len(filenames))
+                ]
             )
         )
         if caption != None: print(caption)

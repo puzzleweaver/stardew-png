@@ -1,5 +1,5 @@
 
-from math import ceil
+from math import ceil, sqrt
 from PIL import Image, ImageDraw, ImageFont
 from textwrap import wrap
 
@@ -37,7 +37,7 @@ class Graphics:
         shape = [(left, top), (left+width, top+height)]
         ret.rectangle(shape, fill=fill, outline=stroke, width=lineWidth)
     
-    def drawText(image, x, y, width, height, text, fill="black"):
+    def drawText(image, x, y, width, height, text, fill="black", bgColor="white"):
         draw = ImageDraw.Draw(image)
 
         maxLineLen = 0
@@ -56,9 +56,9 @@ class Graphics:
         for line in text.split("\n"):
             textWidth = max(textWidth, draw.textlength(line, font=font))
         left = x-textWidth/2
-        top = y-size/2
-        if not '\n' in text:
-            Graphics.drawRect(image, left, top+size/10, textWidth, size, None, "white")
+        top = y-(len(lines))*size/2
+        if bgColor is not None:
+            Graphics.drawRect(image, left, top+size/10, textWidth, size, None, bgColor)
         draw.text((left, top), text, font=font, fill=fill)
 
         # draw.text((x, y), text, font=font, align="center", fill=(255, 0, 255))
@@ -111,25 +111,81 @@ class Graphics:
         image = image.crop((left, top, right+1, bottom+1))
         return image
     
-    def collect(filenames, images, captions):
-        imgWidth = 300
-        pad = 5
-        rowLength = int((3 * len(filenames)) ** 0.5) + 1
+    def withCaption(image, caption, width, height):
+        textLength = 30
+        caption = "\n".join(wrap(caption, textLength))
+
+        canvas = Image.new('RGBA', (width, height))
+
+        imgWidth = min(width, height)
+        
+        # draw border
+        stroke = "#bbbbbb"
+        lineWidth = 1
+        Graphics.drawRect(
+            canvas,
+            1, 1,
+            width-2, height-2,
+            fill="#ffeeee",
+            stroke=stroke,
+            lineWidth=lineWidth,
+        )
+        
+        # draw sprite and rect of bounds
+        Graphics.drawImageInRect(
+            canvas,
+            image,
+            2, 2,
+            imgWidth-4, imgWidth-4
+        )
+
+        if width > height:
+            textX = imgWidth
+            textY = 0
+        else:
+            textX = 0
+            textY = imgWidth
+        textWidth = width-textX
+        textHeight = height-textY
+        Graphics.drawText(
+            canvas, 
+            textX + textWidth/2,
+            textY + textHeight/2,
+            textWidth,
+            textHeight,
+            caption,
+            bgColor=None,
+        )
+        return canvas
+    
+    def collect(images):
+        if len(images) == 0:
+            w = 1000
+            h = 100
+            image = Image.new('RGBA', (w, h))
+            Graphics.drawText(image, w/2, h/2, w, h, "No Images.")
+            return image
+
+        imgWidth = images[0].width
+        imgHeight = images[0].height
+        pad = 0
+        d = 1.5 # desired aspect ratio
+        rowLength = ceil(sqrt(d*imgHeight*len(images)/imgWidth))
+        columnCount = ceil(len(images)/rowLength)
         image = Image.new(
             'RGBA',
             (
                 imgWidth*rowLength,
-                2*imgWidth*ceil(len(filenames)/rowLength),
+                imgHeight*columnCount,
             ),
         )
         index = 0
         canvas = Image.new("RGBA", image.size, (0, 0, 0, 0))
         for i in range(len(images)):
-            filename = filenames[i]
-            captionLines = wrap(captions[i], 20)
+            image = images[i]
             tup = (
                 imgWidth * (index % rowLength),
-                2*imgWidth * int(index / rowLength),
+                imgHeight * int(index / rowLength),
             )
             
             # draw border
@@ -140,7 +196,7 @@ class Graphics:
                 tup[0]+pad,
                 tup[1]+pad,
                 imgWidth - 2*pad,
-                imgWidth*2 - 2*pad,
+                imgHeight - 2*pad,
                 stroke=stroke,
                 lineWidth=lineWidth,
             )
@@ -150,18 +206,7 @@ class Graphics:
                 canvas,
                 Graphics.withBackground(images[i]),
                 tup[0]+2*pad, tup[1]+2*pad,
-                imgWidth-4*pad, imgWidth-4*pad,
-            )
-
-            suffix = filename.split("/")[-1]
-            lines = [ f"{suffix}:" ] + captionLines
-            Graphics.drawText(
-                canvas, 
-                tup[0] + imgWidth/2,
-                tup[1] + imgWidth,
-                imgWidth,
-                imgWidth,
-                "\n".join(lines),
+                imgWidth-4*pad, imgHeight-4*pad,
             )
 
             index += 1
