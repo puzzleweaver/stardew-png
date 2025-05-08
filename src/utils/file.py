@@ -28,9 +28,9 @@ class File:
         return os.path.isfile(filename)
 
     def createDirectory(path):
-        print(f"Creating folder {path}...", end='')
+        # print(f"Creating folder {path}...", end='')
         subprocess.Popen(f'mkdir -p {path}', shell=True).wait()
-        print("done.")
+        # print("done.")
 
     def ensureFolderExists(filename):
         path = '/'.join(filename.split('/')[:-1])
