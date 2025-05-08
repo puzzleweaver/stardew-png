@@ -3,25 +3,22 @@ import copy
 
 from utils.file import File
 from utils.program_exception import ProgramException
-from utils.tags import Tags
+from utils.local_tags import LocalTags
 
-class Manifest:
+class GlobalTags:
+    """A collection of read-only operations on all tags on any sprite."""
 
     def __init__(self, data):
         self.data = data
     
     def load():
-        directories = File.getDirectories("output")
         newData = {}
-        for directory in directories:
-            localTags = Tags.load(directory)
+        allLocalTags = LocalTags.getAll()
+        for localTags in allLocalTags:
             for index in localTags.tagsByIndex:
-                filename = f"{directory}/{index}.png"
+                filename = f"{localTags.directory}/{index}.png"
                 newData[filename] = localTags.getTags(index)
-        return Manifest(newData)
-
-    def save(self):
-        raise ProgramException("Unimplemented: still needs to be refactored to work using local manifests.")
+        return GlobalTags(newData)
 
     def getDirectories(self) -> list[str]:
         ret = []
@@ -31,19 +28,19 @@ class Manifest:
                 ret.append(directory)
         return ret
     
-    def getSubmanifest(self, directory) -> Tags:
+    def getLocalTags(self, directory) -> LocalTags:
         tags = {}
         for filename in File.getNames(directory):
             index = filename.split("/")[-1].split(".")[0]
             if filename in self.data:
                 tags[index] = self.data[filename]
-        return Tags(
+        return LocalTags(
             directory,
             tags,
         )
 
     def fromJson(jsonData):
-        return Manifest(json.loads(jsonData))
+        return GlobalTags(json.loads(jsonData))
     
     def toJson(self):
         return json.dumps(self.data)
@@ -54,26 +51,6 @@ class Manifest:
         except:
             return []
     
-    def withTags(self, filenames, addedTags):
-        newData = copy.deepcopy(self.data)
-        for filename in filenames:
-            newTags = self.getFileTags(filename)
-            for addedTag in addedTags:
-                if not addedTag in newTags:
-                    newTags.append(addedTag)
-            newData[filename] = newTags
-        return Manifest(newData)
-    
-    def withoutTags(self, filenames, removedTags):
-        newData = copy.deepcopy(self.data)
-        for filename in filenames:
-            newTags = [
-                tag for tag in self.getFileTags(filename)
-                if not tag in removedTags
-            ]
-            newData[filename] = newTags
-        return Manifest(newData)
-
     def getAllTags(self):
         filenames = list(self.data.keys())
         tags = []
@@ -115,22 +92,3 @@ class Manifest:
                 ret.append(filename)
         return ret
     
-    def clean(self):
-        """
-        Removes:
-         - all references to files that don't exist
-         - the empty tag
-        """
-        filenames = list(self.data.keys())
-        removedFiles = []
-        newData = copy.deepcopy(self.data)
-        for filename in filenames:
-            if not File.exists(filename):
-                del newData[filename]
-                removedFiles.append(filename)
-        
-
-        return (Manifest(newData), removedFiles)
-    
-    def withoutTag(self, tag):
-        return self.withoutTags(self.getFilesWithTag(tag), [tag])

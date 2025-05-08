@@ -6,25 +6,26 @@ import traceback
 from termcolor import colored
 from utils.file import File
 from utils.graphics import Graphics
-from utils.manifest import Manifest
+from utils.global_tags import GlobalTags
+from utils.local_tags import LocalTags
 from utils.program import Arg, Command, Program
 
 File.setImageHeight(40)
 
 def recalculate():
-    global manifest
-    manifest = Manifest.load()
+    global globalTags
+    globalTags = GlobalTags.load()
 
 # Which
 def which(args):
     tags = args["tags"]
 
-    filesWithTag = manifest.getFilesWithTags(tags)
+    filesWithTag = globalTags.getFilesWithTags(tags)
     filesWithTag.sort()
     
     File.displayList(
         filesWithTag,
-        [" ".join(manifest.getFileTags(file)) for file in filesWithTag],
+        [" ".join(globalTags.getFileTags(file)) for file in filesWithTag],
         caption=f"Everything tagged '{' '.join(tags)}' ({len(filesWithTag)})"
     )
 whichCommand = Command(
@@ -36,32 +37,15 @@ whichCommand = Command(
 
 # Remove Tags
 def rmtag(args):
-    tag = args["tag"]
-    newManifest = manifest.withoutTag(tag)
-    newManifest.save()
+    tagsToRemove = args["tags"]
+    for localTags in LocalTags.getAll():
+        newLocalTags = localTags.withoutTags(tagsToRemove)
+        newLocalTags.save()
 rmtagCommand = Command(
     "rmtag", "Remove Tag",
     "Remove a tag everywhere it appears.",
-    [ Arg.stringType("tag") ],
+    [ Arg.stringType("tags").variable() ],
     rmtag
-)
-
-def distributeManifest(args):
-    manifest = Manifest.load()
-    directories = manifest.getDirectories()
-    for directory in directories:
-        try:
-            tagManifest = manifest.getSubmanifest(directory)
-            tagManifest.save()
-        except Exception as e:
-            print(e)
-            traceback.print_exc()
-distributeCommand = Command(
-    "distribute",
-    "Redistribute Manifest",
-    "Take the singular manifest.json file and save it as individual tags.json files in each image's directory.",
-    [],
-    distributeManifest,
 )
 
 def crop(args):
@@ -82,22 +66,22 @@ cropCommand = Command(
     crop,
 )
 
-# Clean Manifest
-def clean(args):
-    newManifest, removed = Manifest.load().clean()
-    newManifest.save()
-    print(f"Removed tags from manifest: {' '.join(removed)}")
-cleanCommand = Command(
-    "clean", "Clean Manifest",
-    "Removes all nonexistant files from the manifest.",
-    [],
-    clean,
-)
+# # Clean Manifest
+# def clean(args):
+#     newManifest, removed = GlobalTags.load().clean()
+#     newManifest.save()
+#     print(f"Removed tags from manifest: {' '.join(removed)}")
+# cleanCommand = Command(
+#     "clean", "Clean Manifest",
+#     "Removes all nonexistant files from the manifest.",
+#     [],
+#     clean,
+# )
 
 # List Tags
-def tags(args):
-    manifest = Manifest.load()
-    allTags = manifest.getAllTags()
+def list(args):
+    globalTags = GlobalTags.load()
+    allTags = globalTags.getAllTags()
     allTags.sort()
 
     count = len(allTags)
@@ -117,18 +101,18 @@ def tags(args):
         if toggle: col = "black"
         tagsString += colored(
             " ".join([
-                f"{tag}({len(manifest.getFilesWithTag(tag))})"
+                f"{tag}({len(globalTags.getFilesWithTag(tag))})"
                 for tag in tagsWithC
             ]),
             col,
         )
         toggle = not toggle
         print(colored(f"{c.upper()}: {tagsString}", col))
-tagsCommand = Command(
+listCommand = Command(
     "list", "List Tags",
     "List all tags.",
     [],
-    tags,
+    list,
 )
 
 def exportFunction(args):
@@ -142,14 +126,14 @@ def exportFunction(args):
     File.ensureFolderExists("exported/tags/")
     
     # create exported/sprites/ directory and copy the entire output/ folder into it
+    # TODO only copy the image files over.
     File.copyDirectory("output/", "exported/sprites/")
-    File.deleteFile("exported/sprites/manifest.json", confirm=False)
 
     # create files:
-    manifest: Manifest = Manifest.load()
+    globalTags: GlobalTags = GlobalTags.load()
 
     #  exported/all_tags.json: lists all tags on any image.
-    allTags = manifest.getAllTags()
+    allTags = globalTags.getAllTags()
     File.writeJson("exported/all_tags.json", allTags)
 
     # helper function for transforming the manifest's filenames so that things work right
@@ -158,11 +142,11 @@ def exportFunction(args):
 
     #  exported/tags/<tag>.json: lists all files associated with the tag.
     for tag in allTags:
-        filesWithTag = manifest.getFilesWithTag(tag)
+        filesWithTag = globalTags.getFilesWithTag(tag)
         filesWithTag = [
             correct(filename) for filename in filesWithTag
         ]
-        sharedTags = manifest.getSharedTags(tag)
+        sharedTags = globalTags.getSharedTags(tag)
         File.writeJson(
             f"exported/tags/{tag}.json",
             {
@@ -175,7 +159,7 @@ def exportFunction(args):
     files = [ correct(filename) for filename in File.getNames("output") ]
     for file in files:
         tagFilename = f"exported/sprites/{file}".replace(".png", "_tags.json")
-        fileTags = manifest.getFileTags(f"output/{file}")
+        fileTags = globalTags.getFileTags(f"output/{file}")
         File.writeJson(tagFilename, fileTags)
 
     Program.printSpecial("Donezo :3")
@@ -193,11 +177,10 @@ Program(
     [ 
         # tag commands
         rmtagCommand,
-        tagsCommand, 
+        listCommand, 
         whichCommand,
         
         # cleanup commands
-        cleanCommand,
         cropCommand,
         
         # export!

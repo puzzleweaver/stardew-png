@@ -4,7 +4,7 @@ import sys
 from utils.file import File
 from utils.program import Arg, Command, Program
 from utils.program_exception import ProgramException
-from utils.tags import Tags
+from utils.local_tags import LocalTags
 
 File.setImageHeight(40)
 
@@ -43,7 +43,7 @@ def step(count, caption=None):
         currentPageIndex = len(pages)-1
     currentPage = pages[currentPageIndex]
     currentDirectory = pageDirectories[currentPageIndex]
-    previousTags = tags = Tags.load(currentDirectory)
+    previousTags = tags = LocalTags.load(currentDirectory)
     messages = []
     if caption is not None: messages.append(caption)
     if count is not 0: messages.append(f"Stepped by {count}.")

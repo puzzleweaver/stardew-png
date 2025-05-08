@@ -161,7 +161,7 @@ class Sheet:
 
     def saveFinalImages(self):
         for index in self.boxes:
-            subimage = self.getSubimage(index)
+            subimage = Graphics.crop(self.getSubimage(index))
             subfilename = self.getSubpath(index)
             print(f"Saving {subfilename}.")
             File.saveImage(subfilename, subimage)
