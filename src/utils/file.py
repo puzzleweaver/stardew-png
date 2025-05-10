@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+from typing import Callable
 
 from PIL import Image
 
@@ -24,6 +25,9 @@ class File:
         if len(filename) < extensionLength: return False
         return filename[-extensionLength-1:] == f".{extension}"
     
+    def transformPath(path: str, transform: Callable[[list[str]], list[str]]) -> str:
+        return "/".join(transform(path.split("/")))
+
     def exists(filename):
         return os.path.isfile(filename)
 
@@ -37,6 +41,7 @@ class File:
         File.createDirectory(path)
 
     def deleteFile(filename, confirm=True):
+        if not File.exists(filename): return
         if confirm:
             if not Input.getBool(f"Delete {filename}?"):
                 raise ProgramException(f"Won't delete {filename}.")
@@ -44,6 +49,9 @@ class File:
         subprocess.Popen(f'rm {filename}', shell=True).wait()
         print('done.')
 
+    def copyDirectory(source, dest):
+        subprocess.Popen(f'cp -r {source} {dest}', shell=True).wait()
+        
     def deleteDirectory(filename):
         print(f"Deleting directory '{filename}'...", end='')
         subprocess.Popen(f'rm -r {filename}', shell=True).wait()
@@ -131,7 +139,27 @@ class File:
         except:
             return fallback
 
-    def displayList(filenames, captions, caption=None):
+    def displayAll(filenames, caption=None):
+        File.displayImage(
+            Graphics.collect([
+                Graphics.scale(
+                    Graphics.withBackground(
+                        File.getImage(filename)
+                    ), 
+                    10, 
+                    showGuides=False,
+                )
+                for filename in filenames
+            ])
+        )
+        if caption != None: print(caption)
+
+    def displayAllWithCaptions(
+        filenames: list[str], 
+        captions: list[str], 
+        aspectRatio: float=4,
+        caption=None,
+    ):
         File.displayImage(
             Graphics.collect(
                 [
@@ -140,7 +168,7 @@ class File:
                             File.getImage(filenames[i])
                         ),
                         f"[{File.getIndex(filenames[i])}]:\n{captions[i]}",
-                        800, 200,
+                        int(300*aspectRatio), 300,
                     )
                     for i in range(len(filenames))
                 ]

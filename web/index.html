@@ -3,22 +3,52 @@
 
 <head>
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 
 <body>
-    <header>
+    <header id="stardew-header">
         <h1>Stardew PNG</h1>
+        <p>website by Emma</p>
     </header>
-    <main>
-        <label for="browser">Choose your browser from the list:</label>
-        <span id="query-value"></span><input id="query-input">
-        <datalist id="all-tags-list">
-        </datalist>
+
+    <main id="app">
+        <p class="box center">
+
+            <span id="query-terms">
+                <search-term v-for="term in terms" :term="term" :remove-term="onRemoveTerm"></search-term>
+            </span>
+            <br>
+
+            <input v-model="query" id="query-input" class="box" list="query-suggestions"
+                placeholder="search for sprites">
+            <button @click="addTerm">+</button>
+            <button @click="randomize">&#x2684;</button>
+            <datalist id="query-suggestions" v-for="suggestedTag in suggestedTags">
+                <option :value="suggestedTag"></option>
+            </datalist>
+        </p>
+        <p style="width: 100vw; position: absolute; left: 0px">
+            <span v-for="image in images">
+                <img :src="image" class="sprite" :style="`
+                    position: relative;
+                    top: ${getWiggle()}px;
+                    left: ${getWiggle()}px;
+                `" />
+            </span>
+        </p>
     </main>
-    <footer>
-        byeee
-    </footer>
-    <script src="script.js"></script>
+
+    <template id="search-term-template">
+        <span class="box">
+            {{term}}
+            <button class="search-term-button" @click="removeIt">X</button>
+        </span>
+    </template>
+
+    <script type="module" src="scripts/api.js"></script>
+    <script type="module" src="scripts/vue-app.js"></script>
 </body>
 
 </html>

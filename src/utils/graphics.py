@@ -63,12 +63,12 @@ class Graphics:
 
         # draw.text((x, y), text, font=font, align="center", fill=(255, 0, 255))
     
-    def scale(image, factor, dim=1):
+    def scale(image, factor, showGuides=True):
         ret = image.resize(
             (image.width*factor, image.height*factor),
             Image.NEAREST
         )
-        if(factor > 3):
+        if(showGuides):
             for i in range(image.width):
                 for j in range(image.height):
                     stroke = "#bbbbbb"

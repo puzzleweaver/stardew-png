@@ -1,7 +1,5 @@
 # Import module
-import json
 from string import ascii_lowercase
-import traceback
 
 from termcolor import colored
 from utils.file import File
@@ -13,24 +11,28 @@ from utils.program import Arg, Command, Program
 File.setImageHeight(40)
 
 # Which
-def which(args):
+def show(args):
     tags = args["tags"]
 
     globalTags = GlobalTags.load()
 
-    filesWithTag = globalTags.getFilesWithTags(tags)
-    filesWithTag.sort()
+    files = globalTags.query(tags)
+    files.sort()
     
-    File.displayList(
-        filesWithTag,
-        [" ".join(globalTags.getFileTags(file)) for file in filesWithTag],
-        caption=f"Everything tagged '{' '.join(tags)}' ({len(filesWithTag)})"
+    File.displayAllWithCaptions(
+        files,
+        [
+            File.transformPath(file, lambda words: words[:-2])
+            for file in files
+        ],
+        aspectRatio=0.8,
+        caption=f"Everything matching '{' '.join(tags)}' ({len(files)}):"
     )
-whichCommand = Command(
+showCommand = Command(
     "show", "Show Files",
     "Show all files with a tag",
     [ Arg.stringType("tags").variable() ],
-    which,
+    show,
 )
 
 # Remove Tags
@@ -90,18 +92,20 @@ cleanCommand = Command(
 
 # List Tags
 def list(args):
-    globalTags = GlobalTags.load()
-    allTags = globalTags.getAllTags()
-    allTags.sort()
+    argTags = args["tags"]
 
-    count = len(allTags)
+    globalTags = GlobalTags.load()
+    tags = globalTags.getAllTags()
+    tags.sort()
+
+    count = len(tags)
     Program.clear()
     print(f"Total Tags: {count}")
 
     toggle = False
     for c in ascii_lowercase:
         tagsWithC = [
-            tag for tag in allTags
+            tag for tag in tags
             if len(tag) > 0 and tag[0] == c
         ]
         if len(tagsWithC) == 0: continue
@@ -121,7 +125,7 @@ def list(args):
 listCommand = Command(
     "list", "List Tags",
     "List all tags.",
-    [],
+    [ Arg.stringType("tags").variable() ],
     list,
 )
 
@@ -138,14 +142,12 @@ def exportFunction(args):
     File.ensureFolderExists("exported/tags/")
     
     # create exported/sprites/ directory and copy the entire output/ folder into it
-    # TODO only copy the image files over.
     files = File.getNames("output")
-    print("Copying images", end='')
-    for file in files:
-        newFile = "exported/sprites/" + "/".join(file.split("/")[1:])
-        File.saveImage(newFile, File.getImage(file))
-        print('.', end='')
-    print("done.")
+    File.copyDirectory("output/", "exported/sprites/")
+    directories = File.getDirectories("exported/sprites")
+    for directory in directories:
+        File.deleteFile(f"{directory}/tags.json", confirm=False)
+        File.deleteFile(f"{directory}/progress.json", confirm=False)
 
     # create files:
     globalTags: GlobalTags = GlobalTags.load()
@@ -176,12 +178,11 @@ def exportFunction(args):
     #  exported/sprites/<sprite path>/<index>_tags.json: lists all tags on the corresponding image.
     files = [ correct(filename) for filename in File.getNames("output") ]
     for file in files:
-        tagFilename = f"exported/sprites/{file}".replace(".png", "_tags.json")
+        tagFilename = f"exported/sprites/{file}".replace(".png", "t.json")
         fileTags = globalTags.getFileTags(f"output/{file}")
         File.writeJson(tagFilename, fileTags)
 
     Program.printSpecial("Donezo :3")
-
 exportCommand = Command(
     "export", "Export Manifest",
     "Export the manifest in a format which is consumable for the frontend.",
@@ -199,7 +200,7 @@ Program(
         # tag commands
         rmtagCommand,
         listCommand,
-        whichCommand,
+        showCommand,
         
         # cleanup commands
         cropCommand,
