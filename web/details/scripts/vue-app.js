@@ -15,7 +15,7 @@ export function mountApp() {
                 });
             });
             // this is OK only because [image] is constant.
-            const fullImagePath = `stardew-png.github.io${image}`;
+            const fullImagePath = `https://stardew-png.github.io${image}`;
             const crossStitchLink = `https://puzzleweaver.github.io/cross-stitch-maker/?img=${encodeURIComponent(fullImagePath)}`;
             return {
                 image,
