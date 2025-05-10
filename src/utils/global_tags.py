@@ -92,3 +92,30 @@ class GlobalTags:
                 ret.append(filename)
         return ret
     
+    def query(self, queryTags):
+        includedTags = []
+        excludedTags = []
+        for tag in queryTags:
+            if tag[0] == '-': excludedTags.append(tag[1:])
+            else: includedTags.append(tag)
+
+        print(f"Including {includedTags}.")
+        print(f"Excluding {excludedTags}.")
+
+        filenames = list(self.data.keys())
+        ret = []
+        for filename in filenames:
+            good = True
+            fileTags = self.getFileTags(filename)
+            for includedTag in includedTags:
+                if includedTag not in fileTags:
+                    good = False
+                    break
+            for excludedTag in excludedTags:
+                if excludedTag in fileTags:
+                    good = False
+                    break
+                    
+            if good:
+                ret.append(filename)
+        return ret

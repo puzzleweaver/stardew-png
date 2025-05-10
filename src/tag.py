@@ -49,6 +49,11 @@ def step(count, caption=None):
     if count is not 0: messages.append(f"Stepped by {count}.")
     displayPage("\n".join(messages))
 
+def getFilenameKey(filename):
+    key = File.getIndex(filename)
+    try: return int(key)
+    except: return key
+
 def recalculate(caption=None):
     global pages, allFiles, pageDirectories
     pages = []
@@ -56,7 +61,7 @@ def recalculate(caption=None):
     for directory in dirs:
 
         allFiles = File.getNames(directory)
-        allFiles.sort(key=lambda filename: int(File.getIndex(filename)))
+        allFiles.sort(key=getFilenameKey)
 
         subpages = ceil(len(allFiles)/pageSize)
         for i in range(subpages):
@@ -78,7 +83,7 @@ def display(indices, caption):
     global tags
     filenames = [ filenameByIndex(index) for index in indices ]
     captions = [ " ".join(tags.getTags(index)) for index in indices ]
-    File.displayList(filenames, captions, caption=caption)
+    File.displayAllWithCaptions(filenames, captions, caption=caption)
 
 def displayPage(caption):
     global currentPageIndex, pages, currentPage, currentDirectory

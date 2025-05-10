@@ -1,0 +1,44 @@
+:root {
+    --dark-brown: rgb(69, 20, 10);
+    --medium-brown: rgb(226, 123, 63);
+    --light-brown: rgb(255, 212, 135);
+
+    --accent: var(--medium-brown);
+    --accent-hover: lighten(var(--medium-brown), 20%);
+    --accent-bg: var(--light-brown);
+    --bg: rgb(58, 173, 243);
+    --accent-text: var(--text);
+    --border: 3px solid var(--medium-brown);
+}
+
+input {
+    border: 4px solid var(--medium-brown);
+}
+
+#stardew-header {
+    border: var(--border);
+    border-radius: 5px;
+}
+
+.center {
+    text-align: center;
+}
+
+.sprite {
+    /* border: 1px dashed rgba(0, 0, 0, 25%); */
+    margin: 5px;
+    height: 80px;
+    image-rendering: pixelated;
+}
+
+.box {
+    border: var(--border);
+    border-radius: 5px;
+    background-color: var(--accent-bg);
+    margin: 10px;
+    padding: 10px;
+}
+
+button {
+    border: var(--border);
+}
