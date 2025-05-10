@@ -163,5 +163,10 @@ class Sheet:
         for index in self.boxes:
             subimage = Graphics.crop(self.getSubimage(index))
             subfilename = self.getSubpath(index)
+
+            if subimage is None:
+                print(f"Skipping {subfilename} bc its empty")
+                continue
+
             print(f"Saving {subfilename}.")
             File.saveImage(subfilename, subimage)

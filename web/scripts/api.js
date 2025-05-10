@@ -6,6 +6,13 @@ function fetchJson(asset) {
             .catch(error => reject(`Error fetching JSON: ${error}`));
     });
 }
+const urlParams = new URLSearchParams(window.location.search);
+export function getQueryParam(name, fallback) {
+    const param = urlParams.get(name);
+    if (param === null)
+        return fallback;
+    return param;
+}
 function intersect2(list1, list2) {
     return list1.filter(value => list2.includes(value));
 }
@@ -24,21 +31,30 @@ function shuffleArray(list) {
         list[j] = temp;
     }
 }
+export function choose(list) {
+    return list[Math.floor(Math.random() * list.length)];
+}
 export class API {
     static async load() {
-        await fetchJson("data/all_tags.json")
+        await fetchJson("/data/all_tags.json")
             .then(all => API.allTags = all);
     }
-    static async getRandomTag(tags) {
-        const allowedTags = await API.getTagsByTags(tags);
-        const index = Math.floor(Math.random() * allowedTags.length);
-        return allowedTags[index];
+    static async getRandomTags(count) {
+        var tags = [];
+        for (var i = 0; i < count; i++) {
+            const choices = await this.getTagsByTags(tags);
+            // maximally specific
+            if (choices.length === 0)
+                break;
+            tags.push(choose(choices));
+        }
+        return tags.join(" ");
     }
     static async fetchTagData(tag) {
         if (tag in API.tagData) {
             return API.tagData[tag];
         }
-        return fetchJson(`data/tags/${tag}.json`)
+        return fetchJson(`/data/tags/${tag}.json`)
             .then(data => {
             return API.tagData[tag] = data;
         });
@@ -55,15 +71,22 @@ export class API {
         if (tags.length === 0)
             return API.allTags;
         const tagsByEach = await Promise.all(tags.map(tag => API.getTagsByTag(tag)));
-        return intersect(tagsByEach);
+        return intersect(tagsByEach)
+            .filter(tag => !tags.includes(tag));
     }
     static async getImagesByTags(tags) {
         if (tags.length === 0)
-            return undefined;
+            return [];
         const imagesByEach = await Promise.all(tags.map(tag => API.getImagesByTag(tag)));
         const images = intersect(imagesByEach);
         shuffleArray(images);
         return images;
+    }
+    static async getTagsByImage(image) {
+        return fetchJson(image.replace(".png", "t.json"))
+            .then(data => {
+            return data;
+        });
     }
 }
 API.tagData = {};
