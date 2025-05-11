@@ -13,6 +13,12 @@ type TagData = {
     shared: string[],
 };
 
+const urlParams = new URLSearchParams(window.location.search);
+export function getQueryParam(name: string, fallback: string): string {
+    const param = urlParams.get(name);
+    if (param === null) return fallback;
+    return param;
+}
 
 function intersect2(list1: string[], list2: string[]): string[] {
     return list1.filter(value => list2.includes(value));
@@ -34,20 +40,31 @@ function shuffleArray(list: string[]) {
     }
 }
 
+export function choose(list: string[]): string {
+    return list[Math.floor(Math.random() * list.length)];
+}
+
 export class API {
 
     static allTags: string[];
     private static tagData: { [key: string]: TagData } = {};
 
     static async load(): Promise<void> {
-        await fetchJson("data/all_tags.json")
+        await fetchJson("/data/all_tags.json")
             .then(all => API.allTags = all as string[]);
     }
 
-    static async getRandomTag(tags: string[]): Promise<string> {
-        const allowedTags: string[] = await API.getTagsByTags(tags);
-        const index = Math.floor(Math.random() * allowedTags.length);
-        return allowedTags[index];
+    static async getRandomTags(count: number): Promise<string> {
+        var tags: string[] = [];
+        for (var i = 0; i < count; i++) {
+            const choices = await this.getTagsByTags(tags);
+
+            // maximally specific
+            if (choices.length === 0) break;
+
+            tags.push(choose(choices));
+        }
+        return tags.join(" ");
     }
 
     private static async fetchTagData(tag: string): Promise<TagData> {
@@ -55,7 +72,7 @@ export class API {
             return API.tagData[tag];
         }
 
-        return fetchJson(`data/tags/${tag}.json`)
+        return fetchJson(`/data/tags/${tag}.json`)
             .then(data => {
                 return API.tagData[tag] = data as TagData;
             });
@@ -76,17 +93,25 @@ export class API {
         const tagsByEach = await Promise.all(
             tags.map(tag => API.getTagsByTag(tag))
         );
-        return intersect(tagsByEach);
+        return intersect(tagsByEach)
+            .filter(tag => !tags.includes(tag));
     }
 
-    static async getImagesByTags(tags: string[]): Promise<string[] | undefined> {
-        if (tags.length === 0) return undefined;
+    static async getImagesByTags(tags: string[]): Promise<string[]> {
+        if (tags.length === 0) return [];
         const imagesByEach = await Promise.all(
             tags.map(tag => API.getImagesByTag(tag))
         );
         const images = intersect(imagesByEach);
         shuffleArray(images);
         return images;
+    }
+
+    static async getTagsByImage(image: string): Promise<string[]> {
+        return fetchJson(image.replace(".png", "t.json"))
+            .then(data => {
+                return data as string[];
+            });
     }
 
 }

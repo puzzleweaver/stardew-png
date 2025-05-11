@@ -15,9 +15,17 @@ input {
     border: 4px solid var(--medium-brown);
 }
 
-#stardew-header {
+.wide {
+    width: 100vw;
+    position: absolute;
+    left: 0px;
+    text-align: center;
+}
+
+#header {
     border: var(--border);
     border-radius: 5px;
+    border-bottom: var(--border);
 }
 
 .center {

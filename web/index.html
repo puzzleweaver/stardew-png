@@ -8,43 +8,37 @@
 </head>
 
 <body>
-    <header id="stardew-header">
+    <header id="header">
         <h1>Stardew PNG</h1>
-        <p>website by Emma</p>
+        <p style="display: inline-flex; align-items: center; justify-content: center">
+            website by Emma
+            &nbsp;
+            <img src="/girl.webp" class="sprite" style="height: 2rem" />
+            <img src="/heart.png" class="sprite" style="height: 0.5rem" />
+        </p>
     </header>
 
     <main id="app">
         <p class="box center">
 
-            <span id="query-terms">
-                <search-term v-for="term in terms" :term="term" :remove-term="onRemoveTerm"></search-term>
-            </span>
-            <br>
-
             <input v-model="query" id="query-input" class="box" list="query-suggestions"
                 placeholder="search for sprites">
-            <button @click="addTerm">+</button>
             <button @click="randomize">&#x2684;</button>
-            <datalist id="query-suggestions" v-for="suggestedTag in suggestedTags">
-                <option :value="suggestedTag"></option>
+            <datalist id="query-suggestions">
+                <option v-for="suggestion in suggestions" :value="suggestion"></option>
             </datalist>
         </p>
-        <p style="width: 100vw; position: absolute; left: 0px">
+        <p class="wide">
             <span v-for="image in images">
-                <img :src="image" class="sprite" :style="`
-                    position: relative;
-                    top: ${getWiggle()}px;
-                    left: ${getWiggle()}px;
-                `" />
+                <a :href="`/details/?img=${encodeURIComponent(image)}&query=${query}`">
+                    <img :src="image" class="sprite" />
+                </a>
             </span>
         </p>
     </main>
 
-    <template id="search-term-template">
-        <span class="box">
-            {{term}}
-            <button class="search-term-button" @click="removeIt">X</button>
-        </span>
+    <template id="example-template">
+        <div>Who</div>
     </template>
 
     <script type="module" src="scripts/api.js"></script>

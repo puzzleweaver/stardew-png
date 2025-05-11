@@ -1,61 +1,38 @@
-import { API } from "./api.js";
+import { API, getQueryParam } from "./api.js";
 export function mountApp() {
     // @ts-ignore
     const { createApp, ref, watch, onUpdated, onMounted, computed } = Vue;
     const app = createApp({
         setup() {
-            const message = 'Where Woof';
-            const tags = ref([]);
-            const query = ref("");
-            const suggestedTags = ref(API.allTags);
+            const query = ref(getQueryParam("query", ""));
+            const suggestions = ref(API.allTags);
             const images = ref([]);
             const randomize = async () => {
-                query.value = await API.getRandomTag(tags.value);
+                query.value = await API.getRandomTags(2);
             };
-            const addTerm = () => {
-                tags.value = [...tags.value, query.value];
-                query.value = "";
+            var activeQuery = "";
+            const refreshImages = async () => {
+                const currentTags = query.value.split(" ")
+                    .filter((tag) => API.allTags.includes(tag));
+                const nextQuery = currentTags.join(" ");
+                if (nextQuery !== activeQuery) {
+                    activeQuery = nextQuery;
+                    const nextTags = await API.getTagsByTags(currentTags);
+                    suggestions.value = nextTags.map(tag => [...currentTags, tag].join(" "));
+                    console.log(currentTags);
+                    console.log(nextTags);
+                    console.log(suggestions.value);
+                    images.value = await API.getImagesByTags(currentTags);
+                }
             };
-            const onRemoveTerm = (term) => {
-                tags.value = tags.value.filter((item) => item !== term);
-            };
-            const getWiggle = () => {
-                const radius = 10;
-                return Math.floor(Math.random() * radius * 2 - radius);
-            };
-            setInterval(() => {
-                images.value = [...images.value];
-            }, 100);
-            watch(query, () => {
-                console.log(`Value changed to ${query.value}...`);
-            });
-            watch(tags, async () => {
-                suggestedTags.value = await API.getTagsByTags(tags.value);
-                images.value = await API.getImagesByTags(tags.value);
-            });
+            // send query when the page loads.
+            refreshImages();
+            watch(query, refreshImages);
             return {
-                message,
-                onRemoveTerm,
-                terms: tags,
                 query,
                 randomize,
-                addTerm,
-                suggestedTags,
+                suggestions,
                 images,
-                getWiggle,
-            };
-        },
-    });
-    /**
-     * Reused search term component.
-     */
-    app.component('search-term', {
-        props: ['term', 'removeTerm'],
-        template: "#search-term-template",
-        setup(props) {
-            const removeIt = computed(() => () => props.removeTerm(props.term));
-            return {
-                removeIt,
             };
         },
     });
