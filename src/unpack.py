@@ -1,6 +1,7 @@
 # Import module
 from termcolor import colored
 from utils.graphics import Graphics
+from utils.input import Input
 from utils.program import Arg, Command, Program
 from utils.program_exception import ProgramException
 from utils.sheet import Box, Sheet
@@ -28,12 +29,29 @@ if len(filenames) == 0:
 
 print(f"{len(filenames)} Files")
 
+def getOutputFiles():
+    return File.getOutputFiles(sheet.filename)
+
+def isDone():
+    return File.isUnpacked(sheet.filename)
+
+def isNotDoneValidation():
+    if isDone():
+        raise ProgramException("Invalid state for that operation.")
+    
 def setSheet(newSheet):
     global sheet, previousSheet
     previousSheet = sheet
     sheet = newSheet
 
 def display(caption=None):
+    
+    if isDone():
+        outputFiles = getOutputFiles()
+        File.displayAll(outputFiles)
+        print(f"{fileIndex+1}/{len(filenames)} {sheet.filename}")
+        return
+    
     with File.getImage(filename) as image:
         sheet.drawOn(image, viewport)
     if caption is not None:
@@ -65,21 +83,8 @@ def setFilename(index, show=True):
     outputDirectory = sheet.getDirectory()
     progressFilename = f"{outputDirectory}/progress.json"
     if File.exists(progressFilename):
-        sheet = Sheet.fromData(File.readJson(progressFilename), None)
+        sheet = Sheet.fromData(File.readJson(progressFilename))
         caption = "Loaded from progress.json."
-
-    outputFiles = File.getNames(outputDirectory)
-    if len(outputFiles) != 0:
-        print(f"Skipping {filename}...")
-        step(1)
-        return
-    
-    # skip it if it's already done.
-    # TODO make it possible to keep editing one like this.
-    if len(outputFiles) != 0:
-        print(f"Skipping {filename}...")
-        step(1)
-        return
     
     display(caption)
 
@@ -113,20 +118,34 @@ saveCommand = Command(
     "Save your work so far. The saved state is used whenever you come back to this sheet, on subsequent runs of the program or via page navigation.",
     [],
     save,
+    validation=isNotDoneValidation,
 )
 
 def done(args):
     global sheet
     save({})
     sheet.saveFinalImages()
-    Program.printSpecial("Saved output.")
-    step(1)
+    display("Saved output.")
 doneCommand = Command(
     "done",
     "Done",
     "Save the individual sprites and mark this sheet as 'Done', so that it is skipped in subsequent runs.",
     [],
     done,
+    validation=isNotDoneValidation,
+)
+
+def redo(args):
+    outputFiles = getOutputFiles()
+    for file in outputFiles:
+        File.deleteFile(file, confirm=False)
+    display("Unfinalized!")
+redoCommand = Command(
+    "redo",
+    "Redo Unpacking",
+    "Delete the sliced images and set the image in a 'progress saved but not finalized' state so you can edit the unpacking",
+    [],
+    redo,
 )
 
 def stepFunction(args):
@@ -154,6 +173,7 @@ resetCommand = Command(
     "Reset the current work on this sheet.",
     [],
     reset,
+    validation=isNotDoneValidation,
 )
 
 def merge(args):
@@ -177,6 +197,7 @@ mergeCommand = Command(
     "Merge pairs of boxes by index. Replaces everything underneath with the bounding box.",
     [ Arg.intType("indices").variable() ],
     merge,
+    validation=isNotDoneValidation,
 )
 
 def divide(args):
@@ -194,6 +215,7 @@ divideCommand = Command(
     "Divide a box into numX x numY subsprites. Works best if sizes are divisible.",
     [ Arg.intType("index"), Arg.intType("numX"), Arg.intType("numY") ],
     divide,
+    validation=isNotDoneValidation,
 )
 
 def divisorsOf(args):
@@ -217,6 +239,7 @@ divisorsCommand = Command(
     "Lists the divisors of a box's size.",
     [ Arg.intType("index") ],
     divisorsOf,
+    validation=isNotDoneValidation,
 )
 
 def cut(args):
@@ -239,6 +262,7 @@ cutCommand = Command(
         Arg.intType("pixels"),
     ],
     cut,
+    validation=isNotDoneValidation,
 )
 
 def shift(args):
@@ -261,7 +285,8 @@ shiftCommand = Command(
         Arg.enumType("side", ['l', 't', 'r', 'b']), 
         Arg.intType("pixels"),
     ],
-    shift
+    shift,
+    validation=isNotDoneValidation,
 )
 
 def undo(args):
@@ -273,6 +298,7 @@ undoCommand = Command(
     "Undo the previous action. Only one action is stored.",
     [],
     undo,
+    validation=isNotDoneValidation,
 )
 
 def zoom(args):
@@ -290,6 +316,7 @@ zoomCommand = Command(
     "Zoom to show one or more boxes, or reset viewport if no indices are given.",
     [ Arg.intType("indices").variable() ],
     zoom,
+    validation=isNotDoneValidation,
 )
 
 def init():
@@ -314,5 +341,6 @@ Program(
         stepCommand,
         saveCommand,
         doneCommand,
+        redoCommand,
     ],
 ).run()

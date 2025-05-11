@@ -138,19 +138,34 @@ class File:
             return json.loads(File.readText(filename, None))
         except:
             return fallback
+        
+    def getOutputDirectory(filename):
+        dirs = filename.split("/")[1:]
+        path = f"output/{"/".join(dirs[:-1])}"
+
+        filename = dirs[-1]
+        filenameWords = filename.split(".")
+        name = filenameWords[0].replace(" ", "_")
+        return f"{path}/{name}"
+    
+    def getOutputFiles(filename):
+        return File.getNames(File.getOutputDirectory(filename))
+    
+    def hasUnpackingProgress(filename):
+        return File.exists(File.getOutputDirectory(filename) + "/progress.json")
+    
+    def isUnpacked(filename):
+        return len(File.getOutputFiles(filename)) != 0
 
     def displayAll(filenames, caption=None):
         File.displayImage(
             Graphics.collect([
                 Graphics.scale(
                     Graphics.withBackground(
-                        File.getImage(filename)
-                    ), 
-                    10, 
-                    showGuides=False,
-                )
+                    File.getImage(filename),
+                ), 20, showGuides=False)
                 for filename in filenames
-            ])
+            ], border="black", pad=5)
         )
         if caption != None: print(caption)
 

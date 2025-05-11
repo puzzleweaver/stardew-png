@@ -21,15 +21,28 @@ class Graphics:
         background = Graphics.getBackground(image.width, image.height)
         return Image.alpha_composite(background, image)
 
-    def drawImageInRect(canvas, image, left, top, width, height):
+    def drawImageInRect(canvas, image, left, top, width, height, border="black"):
         size, = Graphics.getSize(image.width, image.height, (width, height)),
-        image = Graphics.withSize(image, (width, height))
+        image = Graphics.withSize(image, (width-2, height-2))
+        imageLeft = left + int(width/2 - size[0]/2)
+        imageTop = top + int(height/2 - size[1]/2)+1
         canvas.paste(
             image,
             (
-                left + int(width/2 - size[0]/2),
-                top + int(height/2 - size[1]/2),
+                imageLeft+1,
+                imageTop+1
             ),
+        )
+
+        stroke = border
+        Graphics.drawRect(
+            canvas,
+            imageLeft,
+            imageTop,
+            size[0],
+            size[1],
+            stroke=stroke,
+            lineWidth=1,
         )
 
     def drawRect(image, left, top, width, height, stroke="black", fill=None, lineWidth=1):
@@ -84,9 +97,11 @@ class Graphics:
         return (int(ratio*width), int(ratio*height))
 
     def withSize(image, size):
+        print("Resizing?")
         resizing = Image.NEAREST
-        if image.width > size[0] or image.height > size[1]:
-            resizing = Image.BICUBIC
+        # if image.width > size[0] or image.height > size[1]:
+        #     resizing = Image.BICUBIC
+        #     image = Graphics.scale(image, 2, showGuides=False)
         ret = image.resize(
             Graphics.getSize(image.width, image.height, size),
             resizing,
@@ -158,7 +173,7 @@ class Graphics:
         )
         return canvas
     
-    def collect(images):
+    def collect(images, pad=0, border="#bbbbbb"):
         if len(images) == 0:
             w = 1000
             h = 100
@@ -168,7 +183,6 @@ class Graphics:
 
         imgWidth = images[0].width
         imgHeight = images[0].height
-        pad = 0
         d = 1.5 # desired aspect ratio
         rowLength = ceil(sqrt(d*imgHeight*len(images)/imgWidth))
         columnCount = ceil(len(images)/rowLength)
@@ -188,25 +202,12 @@ class Graphics:
                 imgHeight * int(index / rowLength),
             )
             
-            # draw border
-            stroke = "#bbbbbb"
-            lineWidth = 1
-            Graphics.drawRect(
-                canvas,
-                tup[0]+pad,
-                tup[1]+pad,
-                imgWidth - 2*pad,
-                imgHeight - 2*pad,
-                stroke=stroke,
-                lineWidth=lineWidth,
-            )
-            
             # draw sprite and rect of bounds
             Graphics.drawImageInRect(
                 canvas,
                 Graphics.withBackground(images[i]),
-                tup[0]+2*pad, tup[1]+2*pad,
-                imgWidth-4*pad, imgHeight-4*pad,
+                tup[0]+pad+1, tup[1]+pad+1,
+                imgWidth-2*pad-2, imgHeight-2*pad-2,
             )
 
             index += 1

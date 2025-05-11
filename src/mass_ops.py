@@ -129,7 +129,88 @@ listCommand = Command(
     list,
 )
 
+def progressFunction(args):
+    area = args["area"]
 
+    if area == "tagging":
+        globalTags = GlobalTags.load()
+
+        filenames = File.getNames("raw_content")
+        subdirectories = {
+            "/".join(name.split("/")[:2])
+            for name in filenames
+        }
+
+        def getProgress(name):
+            if File.isUnpacked(name): return 2
+            elif File.hasUnpackingProgress(name): return 1
+            else: return 0
+            
+        for subdirectory in subdirectories:
+            subfilenames = File.getNames(subdirectory)
+            output = ""
+            Program.printSpecial(subdirectory)
+            for i in range(len(subfilenames)):
+                outputDir = File.getOutputDirectory(subfilenames[i])
+
+                color = "red"
+                goodFiles = 0
+                badFiles = 0
+                for outputFile in File.getNames(outputDir):
+                    if len(globalTags.getFileTags(outputFile)) == 0:
+                        badFiles += 1
+                    else: goodFiles += 1
+
+                if goodFiles == 0 and badFiles == 0:
+                    continue
+
+                color = "green"
+                if badFiles == 0: color = "green"
+                elif goodFiles > badFiles: color = "yellow"
+                else: color = "red"
+                output += colored(
+                    "/".join(outputDir.split("/")[2:]) + f"({goodFiles}/{goodFiles+badFiles})",  
+                    color
+                ) + " "
+            print(output)
+            print()
+
+    if area == "unpacking":
+        filenames = File.getNames("raw_content")
+        subdirectories = {
+            "/".join(name.split("/")[:2])
+            for name in filenames
+        }
+        
+        def getProgress(name):
+            if File.isUnpacked(name): return 2
+            elif File.hasUnpackingProgress(name): return 1
+            else: return 0
+            
+        for subdirectory in subdirectories:
+            subfilenames = File.getNames(subdirectory)
+            output = ""
+            Program.printSpecial(subdirectory)
+            for i in range(len(subfilenames)):
+                color = "black"
+                filename = subfilenames[i]
+                progress = getProgress(filename)
+                if progress == 0: color = "red"
+                if progress == 1: color = "yellow"
+                if progress == 2: color = "green"
+                output += colored(
+                    "/".join(filename.split("/")[-1:]).replace(".png", ""),
+                    color
+                ) + " "
+            print(output)
+            print()
+progressCommand = Command(
+    "progress",
+    "Progress Overview",
+    "Show information on what has been done for which files.",
+    [ Arg.enumType("area", ["unpacking", "tagging"]) ],
+    progressFunction,
+)
 
 def exportFunction(args):
     Program.printSpecial("Exporting...")
@@ -208,5 +289,6 @@ Program(
         
         # export!
         exportCommand,
+        progressCommand,
     ],
 ).run()
