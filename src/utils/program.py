@@ -66,7 +66,7 @@ class Program:
 
 class Command:
 
-    def __init__(self, name, title, description, args, func):
+    def __init__(self, name, title, description, args, func, validation=None):
         self.name = name
         self.title = title
         self.description = description
@@ -74,6 +74,7 @@ class Command:
         self.func = func
         self.signature = " ".join([name] + [arg.signature for arg in args])
         self.longSignature = " ".join([name] + [arg.longSignature for arg in args])
+        self.validation = validation
 
     def getMatch(name, commands):
         for command in commands:
@@ -140,6 +141,9 @@ class Command:
         if index != len(words):
             Program.printError(f"Extra arguments...")
             return
+        if self.validation is not None:
+            # can throw errors to prevent the command from running
+            self.validation()
 
         # Log EXACTLY what got called....
         niceArgs = ", ".join(

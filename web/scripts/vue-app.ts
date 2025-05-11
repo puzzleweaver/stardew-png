@@ -14,6 +14,9 @@ export function mountApp() {
                 query.value = await API.getRandomTags(2);
             };
 
+            // if it's empty to start, fill in a random one!
+            if (query.value === "") randomize();
+
             var activeQuery = "";
             const refreshImages = async () => {
                 const currentTags = query.value.split(" ")
