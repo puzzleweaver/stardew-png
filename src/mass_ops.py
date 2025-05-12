@@ -1,4 +1,5 @@
 # Import module
+import copy
 from string import ascii_lowercase
 
 from termcolor import colored
@@ -7,6 +8,7 @@ from utils.graphics import Graphics
 from utils.global_tags import GlobalTags
 from utils.local_tags import LocalTags
 from utils.program import Arg, Command, Program
+from utils.program_exception import ProgramException
 
 File.setImageHeight(40)
 
@@ -76,7 +78,8 @@ def clean(args):
 
     for localTags in LocalTags.getAll():
         newLocalTags = localTags
-        for index in localTags.getIndices():
+        indices = copy.deepcopy(list(localTags.getIndices()))
+        for index in indices:
             file = f"{localTags.directory}/{index}.png"
             if not File.exists(file):
                 newLocalTags= newLocalTags.withoutIndex(index)
@@ -91,9 +94,7 @@ cleanCommand = Command(
 )
 
 # List Tags
-def list(args):
-    argTags = args["tags"]
-
+def listFunction(args):
     globalTags = GlobalTags.load()
     tags = globalTags.getAllTags()
     tags.sort()
@@ -125,8 +126,44 @@ def list(args):
 listCommand = Command(
     "list", "List Tags",
     "List all tags.",
+    [],
+    listFunction,
+)
+
+def refactor(args):
+    raise ProgramException("Unimplemented")
+refactorCommand = Command(
+    "refactor",
+    "Refactor Tags",
+    "Find all instances of a set of tags, and add/remove tags from them.",
     [ Arg.stringType("tags").variable() ],
-    list,
+    refactor,
+)
+
+def deunderscore(args):
+    addedTags = set([])
+    removedTags = set([])
+    for localTags in LocalTags.getAll():
+        tags = localTags.getAllTags()
+        newLocalTags: LocalTags = localTags
+        for tag in tags:
+            words = tag.split("_")
+            if len(words) == 1:
+                continue
+            Program.printWarning(f"Splitting up {tag}...")
+            indices = localTags.getIndicesWith(tag)
+            newLocalTags = newLocalTags.withTags(indices, words).withoutTags(indices, [tag])
+            addedTags = addedTags.union(set(words))
+            removedTags.add(tag)
+        newLocalTags.save()
+    Program.printSuccess(f" + {list(addedTags)}")
+    Program.printError(f" - {list(removedTags)}")
+deunderscoreCommand = Command(
+    "deunderscore",
+    "Remove Underscores",
+    "Replace every instance of tags with underscores, with the list of all the underscore-delimited words.",
+    [],
+    deunderscore,
 )
 
 def progressFunction(args):
@@ -286,6 +323,8 @@ Program(
         # cleanup commands
         cropCommand,
         cleanCommand,
+        deunderscoreCommand,
+        refactorCommand,
         
         # export!
         exportCommand,

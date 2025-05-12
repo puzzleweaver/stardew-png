@@ -1,7 +1,5 @@
 
-import copy
 from utils.file import File
-
 
 class LocalTags:
     directory: str
@@ -13,6 +11,13 @@ class LocalTags:
 
     def getIndices(self) -> list[str]:
         return self.tagsByIndex.keys()
+    
+    def getIndicesWith(self, tag) -> list[str]:
+        ret: list[str] = []
+        for index in self.getIndices():
+            if tag in self.tagsByIndex[index]:
+                ret.append(index)
+        return ret
 
     def getAll() -> list['LocalTags']:
         directories = File.getDirectories("output")
@@ -39,7 +44,7 @@ class LocalTags:
 
     def withTag(self, index: str, tag: str) -> 'LocalTags':
         index = str(index)
-        newTagsByIndex = copy.deepcopy(self.tagsByIndex)
+        newTagsByIndex = self.tagsByIndex
 
         if not index in newTagsByIndex: newTagsByIndex[index] = []
         if tag in newTagsByIndex[index]: return self
@@ -49,7 +54,7 @@ class LocalTags:
 
     def withoutTag(self, index: int, tag: str) -> 'LocalTags':
         index = str(index)
-        newTagsByIndex = copy.deepcopy(self.tagsByIndex)
+        newTagsByIndex = self.tagsByIndex
 
         if not index in newTagsByIndex: return self
         if not tag in newTagsByIndex[index]: return self
@@ -61,7 +66,7 @@ class LocalTags:
         index = str(index)
         if not index in self.tagsByIndex: return self
         
-        newTagsByIndex = copy.deepcopy(self.tagsByIndex)
+        newTagsByIndex = self.tagsByIndex
         del newTagsByIndex[str(index)]
         return LocalTags(self.directory, newTagsByIndex)
 
@@ -86,6 +91,12 @@ class LocalTags:
     def getTags(self, index: str) -> list[str]:
         index = str(index)
         return self.tagsByIndex.get(index, [])
+    
+    def getAllTags(self) -> list[str]:
+        ret = set([])
+        for index in self.getIndices():
+            ret = ret.union(set(self.getTags(index)))
+        return list(ret)
 
     def withoutTags(self, indices: list[str], tags: list[str]) -> 'LocalTags':
         ret = self

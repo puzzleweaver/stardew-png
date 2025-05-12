@@ -39,14 +39,28 @@ export class API {
         await fetchJson("/data/all_tags.json")
             .then(all => API.allTags = all);
     }
-    static async getRandomTags(count) {
+    static async getRandomTags(minCount, maxCount) {
+        console.log("New Random Tags!");
         var tags = [];
-        for (var i = 0; i < count; i++) {
-            const choices = await this.getTagsByTags(tags);
-            // maximally specific
-            if (choices.length === 0)
-                break;
-            tags.push(choose(choices));
+        while (true) {
+            if (tags.length !== 0) {
+                const images = await this.getImagesByTags(tags);
+                const count = images.length;
+                if (count > minCount && count < maxCount)
+                    return tags.join(" ");
+                // Reset if too specific
+                if (count < minCount) {
+                    tags = [];
+                    continue;
+                }
+            }
+            const nextChoices = await this.getTagsByTags(tags);
+            // Reset if too specific
+            if (nextChoices.length === 0) {
+                tags = [];
+                continue;
+            }
+            tags.push(choose(nextChoices));
         }
         return tags.join(" ");
     }

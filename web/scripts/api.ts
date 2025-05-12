@@ -54,15 +54,32 @@ export class API {
             .then(all => API.allTags = all as string[]);
     }
 
-    static async getRandomTags(count: number): Promise<string> {
+    static async getRandomTags(minCount: number, maxCount: number): Promise<string> {
+        console.log("New Random Tags!");
         var tags: string[] = [];
-        for (var i = 0; i < count; i++) {
-            const choices = await this.getTagsByTags(tags);
 
-            // maximally specific
-            if (choices.length === 0) break;
+        while (true) {
+            if (tags.length !== 0) {
+                const images = await this.getImagesByTags(tags);
+                const count = images.length;
+                if (count > minCount && count < maxCount)
+                    return tags.join(" ");
 
-            tags.push(choose(choices));
+                // Reset if too specific
+                if (count < minCount) {
+                    tags = [];
+                    continue;
+                }
+            }
+            const nextChoices = await this.getTagsByTags(tags);
+
+            // Reset if too specific
+            if (nextChoices.length === 0) {
+                tags = [];
+                continue;
+            }
+
+            tags.push(choose(nextChoices));
         }
         return tags.join(" ");
     }
