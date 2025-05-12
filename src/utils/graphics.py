@@ -97,7 +97,6 @@ class Graphics:
         return (int(ratio*width), int(ratio*height))
 
     def withSize(image, size):
-        print("Resizing?")
         resizing = Image.NEAREST
         # if image.width > size[0] or image.height > size[1]:
         #     resizing = Image.BICUBIC

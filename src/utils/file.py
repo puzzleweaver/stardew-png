@@ -163,7 +163,7 @@ class File:
                 Graphics.scale(
                     Graphics.withBackground(
                     File.getImage(filename),
-                ), 20, showGuides=False)
+                ), 10, showGuides=False)
                 for filename in filenames
             ], border="black", pad=5)
         )

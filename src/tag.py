@@ -23,10 +23,10 @@ print(f"Tagging {rootDirectory}")
 dirs = File.getDirectories(rootDirectory)
 
 def setTags(newTags):
-    global tags, previousTags
-    previousTags = tags
-    tags = newTags
-    tags.save()
+    global localTags, previousTags
+    previousTags = localTags
+    localTags = newTags
+    localTags.save()
 
 pageSize = 32
 
@@ -35,7 +35,7 @@ currentPageIndex = 0
 
 def step(count, caption=None):
     global currentPageIndex, currentPage, currentDirectory
-    global tags, previousTags
+    global localTags, previousTags
     currentPageIndex = currentPageIndex + count
     if currentPageIndex < 0:
         currentPageIndex = 0
@@ -43,7 +43,7 @@ def step(count, caption=None):
         currentPageIndex = len(pages)-1
     currentPage = pages[currentPageIndex]
     currentDirectory = pageDirectories[currentPageIndex]
-    previousTags = tags = LocalTags.load(currentDirectory)
+    previousTags = localTags = LocalTags.load(currentDirectory)
     messages = []
     if caption is not None: messages.append(caption)
     if count is not 0: messages.append(f"Stepped by {count}.")
@@ -80,53 +80,36 @@ def filenameByIndex(index):
     return f"{currentDirectory}/{index}.png"
 
 def display(indices, caption):
-    global tags
+    global localTags
     filenames = [ filenameByIndex(index) for index in indices ]
-    captions = [ " ".join(tags.getTags(index)) for index in indices ]
+    captions = [ " ".join(localTags.getTags(index)) for index in indices ]
     File.displayAllWithCaptions(filenames, captions, caption=caption)
 
 def displayPage(caption):
     global currentPageIndex, pages, currentPage, currentDirectory
-    global tags, previousTags
+    global localTags, previousTags
     display(
         currentPage,
         f"Current: {currentPageIndex+1}/{len(pages)}, {currentDirectory}\n{caption}",
     )
 
 def tagFunction(args):
-    global currentPage, tags
-    addedTags = args["tags"]
+    global currentPage, localTags
+    tags = args["tags"]
     indices = args["indices"]
     if len(indices) == 0: indices = currentPage
 
     setTags(
-        tags.withTags(indices, addedTags)
+        localTags.tagWith(indices, tags)
     )
-    displayPage(f"Tagged {indices} with each of {addedTags}.")
+    displayPage(f"Tagged {indices} with each of {tags}.")
 tagCommand = Command(
     "t", "Tag",
     "\n".join([
-        "idempotently add one or more tags to the specified images.\n\nTags the entire page if no indices are specified.",
+        "idempotently add one or more tags to the specified images.\n\nTags the entire page if no indices are specified.\n\n Add '-' before a tag to remove it.",
     ]),
     [ Arg.intType("indices").variable(), Arg.stringType("tags").variable() ],
     tagFunction,
-)
-
-def untag(args):
-    global currentPage, tags
-    tagsToRemove = args["tags"]
-    indices = args["indices"]
-    if len(indices) == 0: indices = currentPage
-
-    setTags(
-        tags.withoutTags(indices, tagsToRemove)
-    )
-    displayPage(f"Untagged {indices} with each of {tagsToRemove}")
-untagCommand = Command(
-    "ut", "Untag",
-    "Idempotently remove tags from the selected files.\n\nIndex system works the same as the t command's.",
-    [ Arg.intType("indices").variable(), Arg.stringType("tags").variable() ],
-    untag,
 )
 
 def getRangeIndices(ranges: list[int]):
@@ -142,44 +125,29 @@ def getRangeIndices(ranges: list[int]):
     return ret
 
 def tagRange(args):
-    global tags
-    addedTags = args["tags"]
+    global localTags
+    tags = args["tags"]
     indices = getRangeIndices(args["ranges"])
     
     setTags(
-        tags.withTags(indices, addedTags)
+        localTags.tagWith(indices, tags)
     )
-    displayPage(f"Tagged indices {indices} with each of {addedTags}")
+    displayPage(f"Tagged indices {indices} with each of {tags}")
 tagRangeCommand = Command(
     "tr", "Tag Range",
-    "adds tags to all images in inclusive ranges.",
+    "adds tags to all images in inclusive ranges. Otherwise similar to 'Tag'",
     [ Arg.intType("ranges").variable(), Arg.stringType("tags").variable() ],
     tagRange,
 )
 
-def untagRange(args):
-    global tags
-    indices = getRangeIndices(args["ranges"])
-    tagsToRemove = args["tags"]
-    setTags(
-        tags.withoutTags(indices, tagsToRemove)
-    )
-    displayPage(f"Untagged indices {indices} with each of {tagsToRemove}")
-untagRangeCommand = Command(
-    "utr", "Untag Range",
-    "adds tags to all images in an inclusive range.",
-    [ Arg.intType("ranges").variable(), Arg.stringType("tags").variable() ],
-    untagRange,
-)
-
 def removeFile(args):
-    global previousTags, tags
+    global previousTags, localTags
     indices = args["indices"]
     for index in indices:
         filename = filenameByIndex(index)
         try:
             File.deleteFile(filename) # will throw error if no consent
-            setTags(tags.withoutIndex(index))
+            setTags(localTags.withoutIndex(index))
             recalculate(caption=f"Deleted {filename}")
             previousTags = None # prevent undo, because you can't undelete the file.
         except:
@@ -234,9 +202,6 @@ Program(
     [
         tagCommand,
         tagRangeCommand,
-
-        untagCommand,
-        untagRangeCommand,
 
         stepCommand,
         removeFileCommand,

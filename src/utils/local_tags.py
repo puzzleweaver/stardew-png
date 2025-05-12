@@ -71,6 +71,17 @@ class LocalTags:
             for tag in tags:
                 ret = ret.withTag(index, tag)
         return ret
+    
+    def tagWith(self, indices: list[int], tags: list[str]) -> 'LocalTags':
+        tagsToAdd = [
+            tag for tag in tags
+            if tag[0] != '-'
+        ]
+        tagsToRemove = [
+            tag[1:] for tag in tags
+            if tag[0] == '-'
+        ]
+        return self.withTags(indices, tagsToAdd).withoutTags(indices, tagsToRemove)
 
     def getTags(self, index: str) -> list[str]:
         index = str(index)
