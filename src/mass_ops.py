@@ -37,21 +37,6 @@ showCommand = Command(
     show,
 )
 
-# Remove Tags
-def rmtags(args):
-    tagsToRemove = args["tags"]
-    for localTags in LocalTags.getAll():
-        localTags.withoutTags(
-            localTags.getIndices(), 
-            tagsToRemove,
-        ).save()
-rmtagCommand = Command(
-    "rmtag", "Remove Tag",
-    "Remove a tag everywhere it appears.",
-    [ Arg.stringType("tags").variable() ],
-    rmtags
-)
-
 def crop(args):
     # TODO iterate over all output files, crop each image.
     outputFiles = File.getNames("output")
@@ -131,11 +116,25 @@ listCommand = Command(
 )
 
 def refactor(args):
-    raise ProgramException("Unimplemented")
+    allTags = args["tags"]
+    selectors = [
+        tag[1:] for tag in allTags
+        if tag[0] == "$"
+    ]
+    tagChanges = [
+        tag for tag in allTags
+        if tag[0] != '$'
+    ]
+    print(f"Refactoring matches to {selectors} with {tagChanges}...")
+    for localTags in LocalTags.getAll():
+        indices = localTags.getIndicesWith(selectors)
+        if len(indices) != 0:
+            print(f"Retagging indices {indices}")
+            localTags.tagWith(indices, tagChanges).save()
 refactorCommand = Command(
     "refactor",
     "Refactor Tags",
-    "Find all instances of a set of tags, and add/remove tags from them.",
+    "Find all instances of a set of tags, and add/remove tags from them. Select using $tag and $-tag, then add/remove tags with just tag or -tag like usual. So for example, to replace the tag 'willie' with 'willy', you would call 'refactor $willie -willie willy'.",
     [ Arg.stringType("tags").variable() ],
     refactor,
 )

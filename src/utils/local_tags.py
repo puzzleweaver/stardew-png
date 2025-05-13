@@ -12,10 +12,21 @@ class LocalTags:
     def getIndices(self) -> list[str]:
         return self.tagsByIndex.keys()
     
-    def getIndicesWith(self, tag) -> list[str]:
+    def getIndicesWith(self, tags) -> list[str]:
         ret: list[str] = []
+        includedTags = [tag for tag in tags if tag[0] != '-']
+        excludedTags = [tag[1:] for tag in tags if tag[0] == '-']
         for index in self.getIndices():
-            if tag in self.tagsByIndex[index]:
+            good = True
+            for tag in includedTags:
+                if tag not in self.getTags(index):
+                    good = False
+                    break
+            for tag in excludedTags:
+                if tag in self.getTags(index):
+                    good = False
+                    break
+            if good:
                 ret.append(index)
         return ret
 
