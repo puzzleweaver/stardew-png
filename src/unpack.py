@@ -50,6 +50,11 @@ def display(caption=None):
         outputFiles = getOutputFiles()
         File.displayAll(outputFiles)
         print(f"{fileIndex+1}/{len(filenames)} {sheet.filename}")
+        hasProgress = File.hasUnpackingProgress(filename)
+        if hasProgress:
+            Program.printSpecial("If you redo from here, you will NOT have to redo everything.")
+        else:
+            Program.printSpecial("WARNING: redo from here will clear all work on this sheet!!!")
         return
     
     with File.getImage(filename) as image:

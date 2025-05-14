@@ -57,10 +57,6 @@ cropCommand = Command(
 
 # # Clean Manifest
 def clean(args):
-    Program.printSpecial("Removing empty tag...")
-    rmtags({ "tags": [''] })
-    Program.printSpecial("Done.")
-
     for localTags in LocalTags.getAll():
         newLocalTags = localTags
         indices = copy.deepcopy(list(localTags.getIndices()))
@@ -315,7 +311,6 @@ Program(
     init,
     [
         # tag commands
-        rmtagCommand,
         listCommand,
         showCommand,
         
