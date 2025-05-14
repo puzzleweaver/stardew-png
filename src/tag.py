@@ -1,4 +1,5 @@
 # Import module
+import copy
 from math import ceil
 import sys
 from utils.file import File
@@ -22,10 +23,13 @@ rootDirectory = sys.argv[1]
 print(f"Tagging {rootDirectory}")
 dirs = File.getDirectories(rootDirectory)
 
-def setTags(newTags):
+def setTags(getNewTags):
     global localTags, previousTags
-    previousTags = localTags
-    localTags = newTags
+
+    newPreviousTags = copy.deepcopy(localTags)
+    localTags = getNewTags() # this block is weird because getNewTags mutates localTags.
+    previousTags = newPreviousTags
+
     localTags.save()
 
 pageSize = 32
@@ -101,7 +105,7 @@ def tagFunction(args):
     if len(indices) == 0: indices = currentPage
 
     setTags(
-        localTags.tagWith(indices, tags)
+        lambda: localTags.tagWith(indices, tags)
     )
     displayPage(f"Tagged {indices} with each of {tags}.")
 tagCommand = Command(
@@ -131,7 +135,7 @@ def tagRange(args):
     indices = getRangeIndices(args["ranges"])
     
     setTags(
-        localTags.tagWith(indices, tags)
+        lambda: localTags.tagWith(indices, tags)
     )
     displayPage(f"Tagged indices {indices} with each of {tags}")
 tagRangeCommand = Command(
@@ -148,7 +152,7 @@ def removeFile(args):
         filename = filenameByIndex(index)
         try:
             File.deleteFile(filename) # will throw error if no consent
-            setTags(localTags.withoutIndex(index))
+            setTags(lambda: localTags.withoutIndex(index))
             recalculate(caption=f"Deleted {filename}")
             previousTags = None # prevent undo, because you can't undelete the file.
         except:
@@ -200,7 +204,7 @@ def undo(args):
     global previousTags
     if previousTags == None:
         raise ProgramException("The previous action isn't possible to undo.")
-    setTags(previousTags)
+    setTags(lambda: previousTags)
     displayPage("Undid previous action.")
 undoCommand = Command(
     "u", "Undo",

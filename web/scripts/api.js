@@ -13,6 +13,9 @@ export function getQueryParam(name, fallback) {
         return fallback;
     return param;
 }
+function difference2(list1, list2) {
+    return list1.filter(value => !list2.includes(value));
+}
 function intersect2(list1, list2) {
     return list1.filter(value => list2.includes(value));
 }
@@ -92,7 +95,12 @@ export class API {
         if (tags.length === 0)
             return [];
         const imagesByEach = await Promise.all(tags.map(tag => API.getImagesByTag(tag)));
-        const images = intersect(imagesByEach);
+        var images = intersect(imagesByEach);
+        // unless 'partial' is EXPLICITLY given, exclude everything with it
+        if (!tags.includes("partial")) {
+            const imagesToExclude = await API.getImagesByTag("partial");
+            images = difference2(images, imagesToExclude);
+        }
         shuffleArray(images);
         return images;
     }

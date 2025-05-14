@@ -20,6 +20,9 @@ export function getQueryParam(name: string, fallback: string): string {
     return param;
 }
 
+function difference2(list1: string[], list2: string[]): string[] {
+    return list1.filter(value => !list2.includes(value));
+}
 function intersect2(list1: string[], list2: string[]): string[] {
     return list1.filter(value => list2.includes(value));
 }
@@ -119,7 +122,14 @@ export class API {
         const imagesByEach = await Promise.all(
             tags.map(tag => API.getImagesByTag(tag))
         );
-        const images = intersect(imagesByEach);
+        var images = intersect(imagesByEach)
+
+        // unless 'partial' is EXPLICITLY given, exclude everything with it
+        if (!tags.includes("partial")) {
+            const imagesToExclude = await API.getImagesByTag("partial");
+            images = difference2(images, imagesToExclude);
+        }
+
         shuffleArray(images);
         return images;
     }

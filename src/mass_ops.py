@@ -32,7 +32,6 @@ def show(args):
         #     for file in files
         # ]
         captions,
-        aspectRatio=0.8,
         caption=f"Everything matching '{' '.join(tags)}' ({len(files)}):"
     )
 showCommand = Command(
