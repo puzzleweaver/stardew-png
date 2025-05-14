@@ -33,7 +33,7 @@ pageSize = 32
 pages = []
 currentPageIndex = 0
 
-def step(count, caption=None):
+def step(count, caption=None, show=True):
     global currentPageIndex, currentPage, currentDirectory
     global localTags, previousTags
     currentPageIndex = currentPageIndex + count
@@ -47,7 +47,8 @@ def step(count, caption=None):
     messages = []
     if caption is not None: messages.append(caption)
     if count is not 0: messages.append(f"Stepped by {count}.")
-    displayPage("\n".join(messages))
+    if show:
+        displayPage("\n".join(messages))
 
 def getFilenameKey(filename):
     key = File.getIndex(filename)
@@ -166,10 +167,10 @@ def stepFunction(args):
 
     if (count > 0 and currentPageIndex == len(pages)-1):
         Program.printSpecial('"This is the end" --Adele')
-        return
+        raise ProgramException("(at end)")
     if (count < 0 and currentPageIndex == 0):
         Program.printWarning('Already at first page.')
-        return
+        raise ProgramException("(at beginning)")
     previousTags = None
 
     step(count)
@@ -178,6 +179,21 @@ stepCommand = Command(
     "Step forwards or backwards through the pages. Defaults to count=1",
     [ Arg.intType("count").optional() ],
     stepFunction
+)
+
+def nextFunction(args):
+    directory = pageDirectories[currentPageIndex]
+    steps = 0
+    while directory == currentDirectory:
+        step(1, show=False)
+        steps += 1
+        if(steps > 1000): raise ProgramException("Too much recursion...")
+    step(0)
+nextCommand = Command(
+    "next", "Next File",
+    "Step by spritesheet instead of by page.",
+    [ Arg.intType("count").optional() ],
+    nextFunction,
 )
 
 def undo(args):
@@ -203,8 +219,10 @@ Program(
         tagCommand,
         tagRangeCommand,
 
-        stepCommand,
         removeFileCommand,
         undoCommand,
+        
+        stepCommand,
+        nextCommand,
     ],
 ).run()

@@ -303,6 +303,17 @@ exportCommand = Command(
     exportFunction,
 )
 
+def publish(args):
+    File.deleteDirectory("web/data")
+    File.copyDirectory("exported", "web/data")
+publishCommand = Command(
+    "publish",
+    "Publish Changes",
+    "Copies the [exported] folder into [web/data], then copies [web] into [../stardew-png.github.io].",
+    [],
+    publish,
+)
+
 def init():
     print("Initialized.")
 
