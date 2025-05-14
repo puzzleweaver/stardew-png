@@ -4,11 +4,14 @@ from string import ascii_lowercase
 
 from termcolor import colored
 from utils.file import File
+from utils.format_text import Prints
 from utils.graphics import Graphics
 from utils.global_tags import GlobalTags
+from utils.input import Input
 from utils.local_tags import LocalTags
 from utils.program import Arg, Command, Program
 from utils.program_exception import ProgramException
+from utils.tagging import collect
 
 File.setImageHeight(40)
 
@@ -21,12 +24,14 @@ def show(args):
     files = globalTags.query(tags)
     files.sort()
     
+    captions = [ file + ": \n" + " ".join(globalTags.getFileTags(file)) for file in files ]
     File.displayAllWithCaptions(
         files,
-        [
-            File.transformPath(file, lambda words: words[:-2])
-            for file in files
-        ],
+        # [
+        #     File.transformPath(file, lambda words: words[:-2])
+        #     for file in files
+        # ]
+        captions,
         aspectRatio=0.8,
         caption=f"Everything matching '{' '.join(tags)}' ({len(files)}):"
     )
@@ -84,30 +89,27 @@ def listFunction(args):
     Program.clear()
     print(f"Total Tags: {count}")
 
-    toggle = False
-    for c in ascii_lowercase:
-        tagsWithC = [
-            tag for tag in tags
-            if len(tag) > 0 and tag[0] == c
-        ]
-        if len(tagsWithC) == 0: continue
-        tagsWithC.sort()
-        tagsString = ""
-        col = "blue"
-        if toggle: col = "black"
-        tagsString += colored(
-            " ".join([
-                f"{tag}({len(globalTags.getFilesWithTag(tag))})"
-                for tag in tagsWithC
-            ]),
-            col,
-        )
-        toggle = not toggle
-        print(colored(f"{c.upper()}: {tagsString}", col))
+    method = args["method"]
+    if method == None:
+        method = 'letter'
+
+    if method == 'letter':
+        by = lambda tag: tag[0]
+        transform = lambda tag: f"{tag}({len(globalTags.getFilesWithTag(tag))})"
+
+    if method == 'count':
+        by = lambda tag: len(globalTags.getFilesWithTag(tag))
+        transform = lambda tag: f"{tag}"
+
+    collected = collect(tags, by, transform)
+    keys = list(collected.keys())
+    keys.sort()
+    lines = [ f"\n---{f'{key}'.upper()}({len(collected[key])})---\n{' '.join(collected[key])}" for key in keys]
+    Prints.stripes(lines)
 listCommand = Command(
     "list", "List Tags",
     "List all tags.",
-    [],
+    [ Arg.enumType("method", ["letter", "count"]).optional() ],
     listFunction,
 )
 
@@ -121,6 +123,9 @@ def refactor(args):
         tag for tag in allTags
         if tag[0] != '$'
     ]
+
+    if len(selectors) == 0 and not Input.getBool("Confirm: you want to Refactor EVERYTHING??"):
+        raise ProgramException("Lmao Oopsie <.<")
     print(f"Refactoring matches to {selectors} with {tagChanges}...")
     for localTags in LocalTags.getAll():
         indices = localTags.getIndicesWith(selectors)
@@ -305,7 +310,10 @@ exportCommand = Command(
 
 def publish(args):
     File.deleteDirectory("web/data")
+    print("Copying from 'exported'...")
     File.copyDirectory("exported", "web/data")
+    print("Successfully copied 'exported' into 'web/data' !")
+    Program.printSpecial("* You'll still need to manually push those changes!")
 publishCommand = Command(
     "publish",
     "Publish Changes",
@@ -334,5 +342,6 @@ Program(
         # export!
         exportCommand,
         progressCommand,
+        publishCommand,
     ],
 ).run()

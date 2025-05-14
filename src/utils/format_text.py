@@ -1,4 +1,7 @@
 
+from termcolor import colored
+
+
 class Prints:
     
     def columns(columns):
@@ -28,3 +31,10 @@ class Prints:
             row = "| " + " | ".join(getRow(j)) + " |"
             rows.append(row)
         return "\n".join([ bumper ] + rows + [ bumper ])
+    
+    def stripes(lines):
+        toggle = True
+        for line in lines:
+            toggle = not toggle
+            print(colored(line, "blue" if toggle else "black"))
+            
