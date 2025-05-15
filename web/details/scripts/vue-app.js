@@ -10,7 +10,7 @@ export function mountApp() {
             const relatedImages = ref([]);
             API.getTagsByImage(image).then(imageTags => {
                 tags.value = imageTags;
-                API.getImagesByTags(imageTags).then((imageTagImages) => {
+                API.getSimilarImagesByTags(imageTags).then((imageTagImages) => {
                     relatedImages.value = imageTagImages;
                 });
             });

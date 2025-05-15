@@ -5,35 +5,38 @@
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
     <link rel="stylesheet" href="/styles.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <link rel="icon" type="image/x-icon" href="/images/star.png">
+    <title>Stardew Valley Sprites</title>
 </head>
 
-<body>
-    <header id="header">
-        <h1>
+<body class="water">
+    <header id="header" class="wood">
+        <h1 class="title">
             One Specific Stardew Valley Png
         </h1>
         <small>also just to be clear ConcernedApe made all of these not me haha</small>
     </header>
     <main id="app">
-        <div class="box" style="text-align: center">
+        <div class="box wood" style="text-align: center">
             <p>
                 <img :src="image" class="sprite" style="height: 200px" />
             </p>
             <p>
                 <a :href="`/?query=${query}`">
-                    <button>&#x2190; go back</button>
+                    <button class="onwood">&#x2190; go back</button>
                 </a>
                 &nbsp;
                 <a :href="image" :download="downloadName">
-                    <button>download <u>&#x2193;</u></button>
+                    <button class="onwood">download <u>&#x2193;</u></button>
                 </a>
                 &nbsp;
                 <a :href="crossStitchLink">
-                    <button>generate pattern &#x2192;</button>
+                    <button class="onwood">generate pattern &#x2192;</button>
                 </a>
             </p>
-            <p>
-                Tags:&nbsp;
+            <p class="box onwood">
+                Tagged as:&nbsp;
                 <span v-for="tag in tags">
                     <a :href="`/?query=${tag}`">{{tag}}</a>
                     &nbsp;

@@ -5,29 +5,54 @@
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <link rel="icon" type="image/x-icon" href="/images/star.png">
+    <title>Stardew Valley Sprites</title>
 </head>
 
-<body>
-    <header id="header">
-        <h1>Stardew PNG</h1>
-        <p style="display: inline-flex; align-items: center; justify-content: center">
-            website by Emma
-            &nbsp;
-            <img src="/images/girl.webp" class="sprite" style="height: 2rem" />
-            <img src="/images/heart.png" class="sprite" style="height: 0.5rem" />
-        </p>
+<body class="water">
+    <header id="header" class="wood">
+        <h1 class="title">Stardew PNG</h1>
+        <a href="https://puzzleweaver.github.io/">
+            <button class="onwood" style="display: inline-flex; align-items: center; justify-content: center">
+                a website by emma
+                &nbsp;
+                <img src="/images/girl.webp" class="sprite" style="height: 2rem" />
+                <img src="/images/heart.png" class="sprite" style="height: 0.5rem" />
+            </button>
+        </a>
     </header>
 
     <main id="app">
-        <p class="box center">
-
-            <input v-model="query" id="query-input" class="box" list="query-suggestions"
-                placeholder="search for sprites">
-            <button @click="randomize">&#x2684;</button>
-            <datalist id="query-suggestions">
-                <option v-for="suggestion in suggestions" :value="suggestion"></option>
-            </datalist>
-        </p>
+        <div class="box center wood">
+            <p class="onwood box" style="text-align: left; margin: 0px">
+                Try a categories:
+                <br>
+                <category-button category="character" plural="characters"></category-button>
+                <category-button category="villager" plural="villagers"></category-button>
+                <category-button category="animal" plural="animals"></category-button>
+                <category-button category="monster" plural="monsters"></category-button>
+                <category-button category="decoration" plural="decorations"></category-button>
+                <category-button category="item" plural="items"></category-button>
+                <category-button category="hat" plural="hats"></category-button>
+                <br>
+                <category-button category="red" plural="red"></category-button>
+                <category-button category="orange" plural="orange"></category-button>
+                <category-button category="yellow" plural="yellow"></category-button>
+                <category-button category="green" plural="green"></category-button>
+                <category-button category="blue" plural="blue"></category-button>
+                <category-button category="purple" plural="purple"></category-button>
+                <category-button category="black" plural="black"></category-button>
+            </p>
+            <p>
+                <input v-model="query" id="query-input" class="box" list="query-suggestions"
+                    placeholder="search for sprites">
+                <button class="onwood" @click="randomize">&#x2684;</button>
+                <datalist id="query-suggestions">
+                    <option v-for="suggestion in suggestions" :value="suggestion"></option>
+                </datalist>
+            </p>
+        </div>
         <p class="wide">
             <span v-for="image in images">
                 <a :href="`/details/?img=${encodeURIComponent(image)}&query=${query}`">
@@ -39,6 +64,12 @@
 
     <template id="example-template">
         <div>Who</div>
+    </template>
+
+    <template id="category-button-template">
+        <a class="category-link" :href="`?query=${category}`" :style="`margin: 5px; color: ${color}`">
+            {{plural}}
+        </a>
     </template>
 
     <script type="module" src="scripts/api.js"></script>

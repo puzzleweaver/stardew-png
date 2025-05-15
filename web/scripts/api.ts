@@ -57,34 +57,49 @@ export class API {
             .then(all => API.allTags = all as string[]);
     }
 
-    static async getRandomTags(minCount: number, maxCount: number): Promise<string> {
-        console.log("New Random Tags!");
+    static async getRandomTags(
+        requiredCategory: string | undefined,
+        minCount: number,
+        maxCount: number,
+    ): Promise<string> {
         var tags: string[] = [];
 
         while (true) {
             if (tags.length !== 0) {
                 const images = await this.getImagesByTags(tags);
                 const count = images.length;
-                if (count > minCount && count < maxCount)
-                    return tags.join(" ");
 
-                // Reset if too specific
                 if (count < minCount) {
                     tags = [];
                     continue;
                 }
+
+                if (requiredCategory !== undefined) {
+                    const categoryImages = await this.getImagesByTags([requiredCategory, ...tags]);
+                    if (categoryImages.length === 0) {
+                        tags = []
+                        continue;
+                    }
+                }
+
+                if (count > minCount && count < maxCount)
+                    return tags.join(" ");
+
+                // Reset if too specific
             }
             const nextChoices = await this.getTagsByTags(tags);
 
             // Reset if too specific
             if (nextChoices.length === 0) {
                 tags = [];
+                console.log("Reset.")
                 continue;
             }
 
-            tags.push(choose(nextChoices));
+            const nextTag = choose(nextChoices);
+            console.log(`[${tags.join(",")}] += ${nextTag}`);
+            tags.push(nextTag);
         }
-        return tags.join(" ");
     }
 
     private static async fetchTagData(tag: string): Promise<TagData> {
@@ -115,6 +130,24 @@ export class API {
         );
         return intersect(tagsByEach)
             .filter(tag => !tags.includes(tag));
+    }
+
+    // get a list of 5+ images that share some of the specified tags.
+    static async getSimilarImagesByTags(tags: string[]): Promise<string[]> {
+        const exactMatches = await API.getImagesByTags(tags);
+        if (exactMatches.length > 3 || tags.length === 1) return exactMatches;
+
+        var best: string[] = [];
+        for (const tag of tags) {
+            // const tagsWithoutTag = tags.filter(t => t !== tag);
+            // const imagesWithoutTag = await API.getImagesByTags(tagsWithoutTag);
+            // if (imagesWithoutTag.length > 3) return imagesWithoutTag;
+            const imagesWithTag = await API.getImagesByTags([tag]);
+            if (imagesWithTag.length > 3 && (best.length > imagesWithTag.length || best.length === 0)) {
+                best = imagesWithTag;
+            }
+        }
+        return best;
     }
 
     static async getImagesByTags(tags: string[]): Promise<string[]> {

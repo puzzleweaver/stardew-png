@@ -1,14 +1,62 @@
 :root {
-    --dark-brown: rgb(69, 20, 10);
+    --dark-brown: rgb(113, 60, 49);
+    --dark-brown-lighter: rgb(162, 88, 74);
     --medium-brown: rgb(226, 123, 63);
+    --medium-brown-lighter: rgb(233, 149, 101);
     --light-brown: rgb(255, 212, 135);
+    --light-brown-lighter: rgb(255, 229, 180);
 
     --accent: var(--medium-brown);
-    --accent-hover: lighten(var(--medium-brown), 20%);
+    --accent-hover: "lighten(var(--medium-brown), 20%)";
     --accent-bg: var(--light-brown);
-    --bg: rgb(58, 173, 243);
+    --bg: rgb(163, 219, 254);
+    --bg-1: rgb(58, 173, 243);
+    --bg-2: rgb(0, 0, 0);
     --accent-text: var(--text);
     --border: 3px solid var(--medium-brown);
+}
+
+/* @font-face {
+    font-family: 'Stardew Title';
+    src: URL('/images/title-font.ttf') format('truetype');
+} */
+
+.title {
+    /* font-family: 'Stardew Title'; */
+    /* font-size: 6em;
+    color: white;
+    text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; */
+    -webkit-text-fill-color: var(--medium-brown);
+    -webkit-text-stroke: 3px;
+    font-size: 4em;
+    color: var(--dark-brown);
+}
+
+
+.category-button {
+    margin: 5px;
+}
+
+.chosen:enabled {
+    color: var(--dark-brown);
+    background-color: var(--medium-brown);
+    border-color: var(--dark-brown);
+}
+
+.chosen.onwood:enabled:hover {
+    color: var(--dark-brown-lighter);
+    background-color: var(--medium-brown-lighter);
+    border-color: var(--dark-brown-lighter);
+}
+
+.water {
+    background: var(--bg);
+    background: linear-gradient(180deg,
+            var(--bg) 0%,
+            var(--bg-1) 90%,
+            var(--bg-2) 100%);
+    background-size: 100% 100%;
+    background-attachment: fixed;
 }
 
 input {
@@ -22,10 +70,26 @@ input {
     text-align: center;
 }
 
+
 #header {
     border: var(--border);
     border-radius: 5px;
     border-bottom: var(--border);
+}
+
+.wood {
+    background-image: url("/images/wood.png");
+    background-repeat: repeat;
+}
+
+.onwood {
+    background-color: var(--light-brown);
+}
+
+.onwood:enabled:hover {
+    background-color: var(--light-brown-lighter);
+    color: black;
+    border-color: var(--medium-brown-lighter);
 }
 
 .center {
